@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f8fa" />
+    <meta name="description" content="Mole 的 uTools 控制台，查看系统状态、分析磁盘并执行维护操作。" />
+    <title>Mole · uTools 控制台</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script>
+      (function () {
+        function show(detail) {
+          if (document.getElementById('boot-failure')) return;
+          var box = document.createElement('div');
+          box.id = 'boot-failure';
+          box.style.cssText = 'font:13px/1.8 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#5b6b82;background:#fff;border:1px solid #e3e8f1;border-radius:12px;padding:22px;margin:40px auto;max-width:560px;box-shadow:0 10px 30px #1e2a4010';
+          var title = document.createElement('strong');
+          title.textContent = 'Mole 插件界面没有加载完成';
+          var hint = document.createElement('p');
+          hint.style.color = '#8b98aa';
+          hint.textContent = '请在 uTools 中按 Ctrl+Shift+I 打开开发者工具查看错误，或重新安装插件。';
+          var pre = document.createElement('pre');
+          pre.style.cssText = 'white-space:pre-wrap;word-break:break-all;background:#f6f8fb;padding:10px;border-radius:6px;font-size:11px';
+          pre.textContent = detail || '未知错误';
+          box.appendChild(title); box.appendChild(hint); box.appendChild(pre);
+          document.body.appendChild(box);
+        }
+        window.addEventListener('error', function (event) {
+          var target = event.target;
+          if (target && target.tagName) {
+            var isStyle = target.tagName === 'LINK' && target.rel === 'stylesheet';
+            if (target.tagName === 'SCRIPT' || isStyle) show('资源加载失败：' + (target.src || target.href || target.tagName));
+            return;
+          }
+          show((event.message || '脚本执行失败') + (event.filename ? '\n' + event.filename + ':' + event.lineno : ''));
+        }, true);
+        window.addEventListener('unhandledrejection', function (event) {
+          var reason = event.reason;
+          show('Promise 未处理：' + (reason && (reason.stack || reason.message) || String(reason)));
+        });
+        window.setTimeout(function () {
+          var root = document.getElementById('root');
+          if (root && !root.childElementCount) show('界面在 4 秒内没有渲染完成。');
+        }, 4000);
+      })();
+    </script>
+  </head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>

@@ -1,0 +1,40 @@
+# Dependencies and local package cache
+node_modules/
+.pnpm-store/
+
+# Build output and packaged uTools plugins
+dist/
+*.upx
+*.tsbuildinfo
+
+# Local caches and test reports
+.cache/
+.vite/
+.codegraph/
+coverage/
+playwright-report/
+test-results/
+
+# Local environment files; keep configuration examples
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and operating system files
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

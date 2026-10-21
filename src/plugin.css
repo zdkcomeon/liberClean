@@ -1,0 +1,2719 @@
+/* Compact layouts for the uTools plugin viewport. */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.plugin-shell {
+  --sidebar-width: 136px;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  color: #303b4b;
+  font-size: 12px;
+}
+
+.plugin-shell .sidebar {
+  position: static;
+  width: var(--sidebar-width);
+  height: 100%;
+  flex: 0 0 var(--sidebar-width);
+  padding: 14px 8px 10px;
+  background: #fafbfc;
+}
+
+.plugin-shell .brand {
+  gap: 8px;
+  padding: 0 7px 18px;
+  font-size: 19px;
+  letter-spacing: -.5px;
+}
+
+.plugin-shell .brand > span {
+  display: block;
+}
+
+.plugin-shell .brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  flex: 0 0 30px;
+  box-shadow: none;
+}
+
+.plugin-shell .brand-mark svg {
+  width: 29px;
+  height: 29px;
+}
+
+.plugin-shell .brand-sub {
+  font-size: 7px;
+  letter-spacing: 1.6px;
+}
+
+.plugin-shell .sidebar nav {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.plugin-shell .nav-group {
+  margin: 0 0 14px;
+}
+
+.plugin-shell .nav-group:last-child {
+  margin: auto 0 0;
+  padding-top: 8px;
+}
+
+.plugin-shell .nav-group > p {
+  display: block;
+  padding: 0 9px;
+  margin-bottom: 5px;
+  font-size: 10px;
+  letter-spacing: .5px;
+  color: #969eaa;
+}
+
+.plugin-shell .nav-item {
+  height: 34px;
+  padding: 0 9px;
+  margin: 3px 0;
+  gap: 9px;
+  justify-content: flex-start;
+  font-size: 12px;
+  color: #737e8d;
+}
+
+.plugin-shell .nav-item > span {
+  display: block;
+}
+
+.plugin-shell .nav-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.plugin-shell .nav-item.active {
+  color: #496fc1;
+  background: #eaf0fc;
+}
+
+.plugin-shell .nav-task-dot {
+  width: 5px;
+  height: 5px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #5f86d5;
+  flex-shrink: 0;
+}
+
+.plugin-shell .sidebar-bottom {
+  display: block;
+  padding: 10px 8px 0;
+  margin-top: 8px;
+  border-top: 1px solid #e9edf2;
+}
+
+.plugin-shell .local-note {
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  color: #7e9987;
+}
+
+.plugin-shell .local-note span {
+  margin: 0;
+  font-size: 10px;
+  color: #84928a;
+}
+
+.plugin-shell .sidebar-link {
+  padding-top: 7px;
+  font-size: 10px;
+  color: #929daa;
+}
+
+.plugin-shell .main-shell {
+  flex: 1;
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  margin-left: 0;
+}
+
+.plugin-shell .topbar {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 18px;
+  gap: 12px;
+  background: #fff;
+}
+
+.plugin-shell .window-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.plugin-shell .window-title strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.plugin-shell .window-title > span {
+  padding-left: 10px;
+  border-left: 1px solid #e5e9f0;
+  font-size: 10px;
+  color: #929cab;
+  white-space: nowrap;
+}
+
+.plugin-shell .machine-button {
+  padding: 5px 7px;
+  gap: 7px;
+  border: 0;
+  color: #778498;
+  font-size: 10px;
+  background: transparent;
+}
+
+.plugin-shell .machine-button:hover {
+  background: #f1f4f9;
+}
+
+.plugin-shell .machine-button > span:first-of-type {
+  margin: 0;
+  overflow: visible;
+}
+
+.plugin-shell .page-content {
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 16px 18px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d5dce6 transparent;
+}
+
+.plugin-shell .page-footer {
+  flex: 0 0 26px;
+  padding: 0 18px;
+  gap: 10px;
+  font-size: 10px;
+  border-top: 1px solid #e9edf2;
+  background: #fafbfc;
+  color: #939eac;
+}
+
+.plugin-shell .page-footer > span:last-child {
+  display: flex;
+}
+
+.plugin-shell .page-heading {
+  align-items: center;
+  flex-direction: row;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.plugin-shell .page-heading > div {
+  min-width: 0;
+}
+
+.plugin-shell .page-heading h1,
+.plugin-shell .operation-context h1 {
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: -.3px;
+  font-weight: 600;
+}
+
+.plugin-shell .page-heading p {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #8792a2;
+}
+
+.plugin-shell .card {
+  padding: 14px;
+  border-radius: 9px;
+}
+
+.plugin-shell .section-heading {
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.plugin-shell .section-heading h2 {
+  font-size: 12px;
+  gap: 6px;
+}
+
+.plugin-shell .section-heading p {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.plugin-shell .primary,
+.plugin-shell .secondary,
+.plugin-shell .danger-button {
+  min-height: 32px;
+  padding: 7px 11px;
+  gap: 6px;
+  font-size: 11px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.plugin-shell .secondary {
+  color: #72829a;
+}
+
+.plugin-shell .text-button {
+  font-size: 11px;
+  color: #7d90ae;
+}
+
+.plugin-shell .danger-text {
+  color: #b67b80;
+}
+
+.plugin-shell .notice,
+.plugin-shell .active-banner {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  font-size: 11px;
+}
+
+/* The overview keeps common actions visible without a marketing header. */
+.plugin-shell .overview-hero {
+  min-height: 0;
+  padding: 13px 15px;
+  margin-bottom: 12px;
+  gap: 12px;
+  align-items: center;
+  border-radius: 9px;
+  background: linear-gradient(110deg, #fff, #f4f7fe);
+}
+
+.plugin-shell .device-mark {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  display: grid;
+  place-items: center;
+  color: #8198bd;
+  background: #eaf0fa;
+  border-radius: 11px;
+}
+
+.plugin-shell .hero-copy {
+  min-width: 0;
+}
+
+.plugin-shell .device-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .hero-copy h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -.5px;
+}
+
+.plugin-shell .live-pill {
+  display: inline-flex;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+}
+
+.plugin-shell .live-dot {
+  width: 5px;
+  height: 5px;
+}
+
+.plugin-shell .hardware-line {
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .hero-bottom {
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 10px;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .health-summary {
+  width: 94px;
+  flex: 0 0 94px;
+  padding-left: 16px;
+}
+
+.plugin-shell .health-number {
+  margin: 0;
+  font-size: 31px;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+
+.plugin-shell .health-number span {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.plugin-shell .health-summary p {
+  margin-top: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.plugin-shell .metric-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.plugin-shell .metric-card,
+.plugin-shell .metric-grid > .metric-card:last-child {
+  grid-column: auto;
+  min-height: 104px;
+  padding: 10px 12px 23px;
+  border-radius: 9px;
+}
+
+.plugin-shell .metric-title {
+  font-size: 11px;
+  color: #8290a3;
+}
+
+.plugin-shell .metric-title > span:first-child {
+  gap: 6px;
+}
+
+.plugin-shell .metric-value {
+  margin-top: 7px;
+  font-size: 25px;
+  line-height: 1.1;
+}
+
+.plugin-shell .metric-detail {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #94a0b1;
+}
+
+.plugin-shell .sparkline {
+  position: absolute;
+  bottom: 4px;
+  left: 12px;
+  width: calc(100% - 24px);
+  height: 16px;
+  margin: 0;
+  opacity: .8;
+  pointer-events: none;
+}
+
+.plugin-shell .sparkline.empty {
+  height: 1px;
+  background: #eef1f6;
+}
+
+.plugin-shell .network-metric {
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.plugin-shell .network-metric strong {
+  font-size: 22px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.plugin-shell .network-upload {
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.plugin-shell .network-bars {
+  height: 20px;
+  gap: 3px;
+  right: 12px;
+  max-width: calc(100% - 24px);
+}
+
+.plugin-shell .network-bars i {
+  width: 4px;
+}
+
+.plugin-shell .storage-card {
+  min-height: 0;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.plugin-shell .storage-card .section-heading {
+  margin-bottom: 10px;
+}
+
+.plugin-shell .storage-card h2 {
+  min-width: 0;
+}
+
+.plugin-shell .storage-card h2 small {
+  font-size: 10px;
+  color: #a2adbb;
+  font-weight: 400;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plugin-shell .storage-meter {
+  height: 6px;
+  background: #eaf0f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.plugin-shell .storage-meter > span {
+  display: block;
+  height: 100%;
+  background: #91ace2;
+  border-radius: inherit;
+  transition: width .3s;
+}
+
+.plugin-shell .storage-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 10px;
+  color: #929fb1;
+  font-variant-numeric: tabular-nums;
+}
+
+.plugin-shell .storage-caption strong {
+  font-weight: 500;
+  color: #6b82a6;
+}
+
+.plugin-shell .tools-section {
+  margin-bottom: 12px;
+}
+
+.plugin-shell .tools-section > .section-heading {
+  margin-bottom: 8px;
+}
+
+.plugin-shell .subtle-label {
+  display: flex;
+  font-size: 10px;
+  color: #9aa5b4;
+}
+
+.plugin-shell .tool-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.plugin-shell .tool-card {
+  min-height: 76px;
+  padding: 10px 4px;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.plugin-shell .tool-card:hover {
+  border-color: #c9d8f1;
+  background: #fbfcff;
+  transform: none;
+  box-shadow: 0 3px 12px #35456408;
+}
+
+.plugin-shell .tool-icon {
+  width: 29px;
+  height: 29px;
+  margin: 0;
+  border-radius: 8px;
+}
+
+.plugin-shell .tool-card-title {
+  display: block;
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.plugin-shell .recent-card {
+  padding: 10px 12px 2px;
+  margin-bottom: 12px;
+}
+
+.plugin-shell .recent-card .section-heading {
+  margin-bottom: 5px;
+}
+
+.plugin-shell .recent-row {
+  padding: 9px 0;
+  gap: 9px;
+}
+
+.plugin-shell .recent-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.plugin-shell .recent-row > div:nth-child(2) {
+  min-width: 0;
+}
+
+.plugin-shell .recent-row strong {
+  font-size: 11px;
+}
+
+.plugin-shell .recent-row > div > span {
+  margin-top: 2px;
+  font-size: 10px;
+}
+
+.plugin-shell .system-details {
+  border-top: 1px solid #e7ebf1;
+}
+
+.plugin-shell summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.plugin-shell summary::-webkit-details-marker {
+  display: none;
+}
+
+.plugin-shell summary:focus-visible {
+  outline: 2px solid #a1bff7;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.plugin-shell .system-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 2px;
+  color: #8b99ad;
+  font-size: 11px;
+}
+
+.plugin-shell .system-details > summary span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plugin-shell details[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.plugin-shell .device-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  padding: 0 2px 8px;
+}
+
+.plugin-shell .device-row {
+  margin: 0;
+  padding: 7px 0;
+  font-size: 11px;
+}
+
+.plugin-shell .device-row strong {
+  font-size: 11px;
+}
+
+/* Directory analysis uses one compact input row and a navigable result list. */
+.plugin-shell .scan-controls {
+  padding: 13px 14px;
+  margin-bottom: 12px;
+}
+
+.plugin-shell .scan-controls label {
+  margin-bottom: 7px;
+  font-size: 11px;
+}
+
+.plugin-shell .scan-controls form {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.plugin-shell .path-input {
+  min-width: 0;
+  padding: 0 10px;
+  gap: 7px;
+}
+
+.plugin-shell .path-input input {
+  min-width: 0;
+  padding: 8px 0;
+  font-size: 11px;
+}
+
+.plugin-shell .path-shortcuts {
+  margin-top: 10px;
+  gap: 6px;
+  font-size: 10px;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .path-shortcuts button {
+  padding: 3px 7px;
+  font-size: 10px;
+  color: #7e93b2;
+}
+
+.plugin-shell .empty-state {
+  padding: 32px 16px;
+}
+
+.plugin-shell .scan-empty {
+  min-height: 230px;
+}
+
+.plugin-shell .scan-empty-art {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+}
+
+.plugin-shell .scan-empty-art > svg {
+  width: 29px;
+  height: 29px;
+}
+
+.plugin-shell .scan-empty-art > span {
+  padding: 5px;
+  border-radius: 8px;
+}
+
+.plugin-shell .empty-state h2 {
+  margin-top: 17px;
+  font-size: 14px;
+}
+
+.plugin-shell .empty-state p {
+  max-width: none;
+  margin-top: 7px;
+  font-size: 11px;
+}
+
+.plugin-shell .empty-feature-row {
+  margin-top: 18px;
+  gap: 16px;
+  font-size: 10px;
+}
+
+.plugin-shell .scan-results {
+  padding: 14px;
+}
+
+.plugin-shell .scan-treemap button {
+  min-height: 84px;
+  padding: 12px 8px;
+  gap: 7px;
+}
+
+.plugin-shell .scan-treemap strong {
+  font-size: 10px;
+}
+
+.plugin-shell .scan-treemap span {
+  font-size: 9px;
+}
+
+.plugin-shell .disk-breadcrumbs {
+  padding-bottom: 10px;
+  font-size: 11px;
+}
+
+.plugin-shell .list-filter {
+  margin-top: 12px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.plugin-shell .file-row {
+  grid-template-columns: minmax(0, 1fr) 86px 56px 14px;
+  padding: 11px 2px;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.plugin-shell .file-row > span:first-child {
+  gap: 7px;
+}
+
+.plugin-shell .file-head,
+.plugin-shell .file-row .scan-status {
+  font-size: 10px;
+}
+
+.plugin-shell .large-files {
+  margin-top: 16px;
+}
+
+/* Maintenance puts the controls and the terminal in a single workspace. */
+.plugin-shell :is(.page-clean, .page-optimize, .page-purge, .page-installer) {
+  display: flex;
+  flex-direction: column;
+}
+
+.plugin-shell .operation-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.plugin-shell .operation-intro {
+  display: block;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.plugin-shell .operation-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plugin-shell .operation-context > div:last-child {
+  min-width: 0;
+}
+
+.plugin-shell .operation-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.plugin-shell .operation-context p {
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8c99ad;
+}
+
+.plugin-shell .operation-intro .operation-impact {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #9a8b76;
+}
+
+.plugin-shell .operation-impact svg {
+  margin-top: 2px;
+}
+
+.plugin-shell .operation-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.plugin-shell .operation-steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b0b9c6;
+}
+
+.plugin-shell .operation-steps > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.plugin-shell .operation-steps i {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f0f3f8;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.plugin-shell .operation-steps [aria-current] {
+  color: #6487c9;
+}
+
+.plugin-shell .operation-steps [aria-current] i {
+  background: #eaf0fd;
+}
+
+.plugin-shell .operation-buttons {
+  flex-direction: row;
+  width: auto;
+  min-width: 0;
+  gap: 8px;
+}
+
+.plugin-shell .operation-intro .operation-waiting {
+  margin-top: 9px;
+  font-size: 11px;
+  color: #9a8b76;
+}
+
+.plugin-shell .task-summary {
+  padding: 9px 11px;
+  margin: 0 0 10px;
+}
+
+.plugin-shell .task-summary-heading {
+  gap: 8px;
+}
+
+.plugin-shell .task-summary-heading > div {
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .task-summary > p {
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.plugin-shell .task-mode,
+.plugin-shell .task-elapsed,
+.plugin-shell .task-reference,
+.plugin-shell .task-id {
+  font-size: 10px;
+}
+
+.plugin-shell .task-reference {
+  color: #abb5c4;
+  white-space: nowrap;
+}
+
+.plugin-shell .task-id {
+  margin-top: 7px;
+}
+
+.plugin-shell .task-id span {
+  white-space: normal;
+}
+
+.plugin-shell .state-badge {
+  font-size: 10px;
+  padding: 3px 6px;
+}
+
+.plugin-shell .state-cancelled {
+  background: #f4f1f1;
+  color: #a08d8d;
+}
+
+.plugin-shell .terminal-empty,
+.plugin-shell .operation-workspace > .plugin-terminal:not(.terminal-expanded) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 230px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.plugin-shell .terminal-toolbar {
+  min-height: 34px;
+  padding: 8px 12px;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.plugin-shell .terminal-toolbar > span {
+  font-size: 10px;
+}
+
+.plugin-shell .terminal-placeholder {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 190px;
+  padding: 22px 16px;
+  text-align: center;
+  color: #61738e;
+}
+
+.plugin-shell .terminal-placeholder h3 {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #a5b5ce;
+}
+
+.plugin-shell .terminal-placeholder p {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #7586a1;
+}
+
+.plugin-shell .terminal-placeholder > div {
+  margin-top: 17px;
+  gap: 18px;
+  font-size: 10px;
+}
+
+.plugin-shell .terminal-placeholder small {
+  color: #61738e;
+  font-size: 10px;
+  margin-left: 5px;
+}
+
+.plugin-shell .plugin-terminal .terminal-body {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  padding: 10px 8px 0 12px;
+}
+
+.plugin-shell .terminal-footer {
+  min-height: 31px;
+  padding: 7px 10px;
+  gap: 10px;
+  font-size: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .terminal-key-hint {
+  display: none;
+}
+
+.plugin-shell .terminal-stop {
+  margin-left: auto;
+}
+
+.plugin-shell .terminal-actions {
+  gap: 10px;
+}
+
+.plugin-shell .terminal-expanded {
+  inset: 10px;
+  z-index: 40;
+}
+
+.plugin-shell .terminal-expanded .terminal-body {
+  min-height: 0;
+}
+
+.plugin-shell .terminal-notice {
+  padding: 7px 12px;
+  flex-shrink: 0;
+}
+
+.plugin-shell .operation-help {
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+.plugin-shell .operation-help summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+  font-size: 10px;
+  color: #97a3b5;
+}
+
+.plugin-shell .operation-help summary > svg:last-child {
+  margin-left: auto;
+}
+
+.plugin-shell .operation-help p {
+  margin-top: 7px;
+  font-size: 11px;
+  color: #8c9bb0;
+}
+
+.plugin-terminal .terminal-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-top: 1px solid #273044;
+  background: #192130;
+  flex-shrink: 0;
+}
+
+.plugin-terminal .terminal-auth > svg {
+  color: #8ba7d2;
+  flex-shrink: 0;
+}
+
+.plugin-terminal .terminal-auth input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #34425a;
+  border-radius: 6px;
+  background: #111823;
+  color: #d9e3f2;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.plugin-terminal .terminal-auth-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #8ba7d2;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.plugin-terminal .terminal-auth .text-button {
+  color: #7f91ad;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* The application list scrolls independently, keeping selection actions visible. */
+.plugin-shell .page-uninstall {
+  display: flex;
+  flex-direction: column;
+}
+
+.plugin-shell .uninstall-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.plugin-shell .uninstall-page .page-heading {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.plugin-shell .application-library {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 220px;
+  padding: 0;
+}
+
+.plugin-shell .application-library-heading {
+  padding: 13px 14px 11px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.plugin-shell .library-title h2 {
+  font-size: 13px;
+}
+
+.plugin-shell .application-library-heading p {
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.plugin-shell .library-readonly {
+  font-size: 10px;
+}
+
+.plugin-shell .app-library-controls {
+  padding: 0 14px 12px;
+  gap: 8px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.plugin-shell .app-search {
+  padding: 8px 10px;
+  flex-basis: 0;
+  gap: 7px;
+}
+
+.plugin-shell .app-search input {
+  font-size: 11px;
+}
+
+.plugin-shell .app-library-controls select {
+  width: auto;
+  max-width: 110px;
+  min-width: 0;
+  flex: 0 1 auto;
+  padding: 6px 8px;
+  font-size: 10px;
+}
+
+.plugin-shell .app-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d5dce6 transparent;
+}
+
+.plugin-shell .app-list-head,
+.plugin-shell .application-row {
+  grid-template-columns: minmax(0, 1fr) 80px 74px;
+  padding: 10px 14px;
+  gap: 10px;
+}
+
+.plugin-shell .app-list-head {
+  padding-top: 9px;
+  padding-bottom: 9px;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.plugin-shell .app-list-head > span:nth-child(2),
+.plugin-shell .application-row > .app-source {
+  display: block;
+}
+
+.plugin-shell .app-list-head label,
+.plugin-shell .application-select {
+  gap: 10px;
+}
+
+.plugin-shell .application-row {
+  min-height: 64px;
+}
+
+.plugin-shell .application-icon {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.plugin-shell .application-text {
+  gap: 3px;
+}
+
+.plugin-shell .application-text strong {
+  font-size: 12px;
+}
+
+.plugin-shell .application-text > span,
+.plugin-shell .application-text small,
+.plugin-shell .app-source,
+.plugin-shell .app-size {
+  font-size: 10px;
+}
+
+.plugin-shell .library-footnote {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  gap: 6px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.plugin-shell .app-loading {
+  padding: 30px 16px;
+  overflow: auto;
+}
+
+.plugin-shell .app-loading h3 {
+  font-size: 13px;
+}
+
+.plugin-shell .app-loading p {
+  font-size: 11px;
+}
+
+.plugin-shell .app-skeletons {
+  margin-top: 16px;
+}
+
+.plugin-shell .app-selection-bar {
+  position: static;
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px 12px;
+  gap: 12px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.plugin-shell .app-selection-bar > div {
+  gap: 9px;
+}
+
+.plugin-shell .selected-count {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.plugin-shell .app-selection-bar strong {
+  font-size: 11px;
+}
+
+.plugin-shell .app-selection-bar > div > div > span {
+  max-width: 180px;
+  font-size: 10px;
+}
+
+.plugin-shell .uninstall-review {
+  flex-shrink: 0;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.plugin-shell .uninstall-page:has(.uninstall-review) .application-library {
+  flex: 0 0 320px;
+}
+
+.plugin-shell .uninstall-review-head h2 {
+  font-size: 13px;
+}
+
+.plugin-shell .uninstall-review-head p {
+  font-size: 11px;
+}
+
+.plugin-shell .review-state-icon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-radius: 9px;
+}
+
+.plugin-shell .review-files-title {
+  margin-top: 16px;
+}
+
+.plugin-shell .review-file-list {
+  max-height: 220px;
+}
+
+.plugin-shell .review-footer {
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.plugin-shell .review-footer > .danger-button {
+  width: auto;
+}
+
+.plugin-shell .uninstall-auth {
+  padding: 12px;
+  margin-top: 14px;
+}
+
+.plugin-shell .uninstall-auth > div > div {
+  flex-direction: row;
+}
+
+/* Settings, history and dialogs follow the same compact spacing. */
+.plugin-shell .history-toolbar {
+  margin-bottom: 12px;
+}
+
+.plugin-shell .segmented button {
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.plugin-shell .history-card {
+  padding: 4px 14px;
+}
+
+.plugin-shell .history-row {
+  grid-template-columns: minmax(0, 1.3fr) minmax(100px, 1fr) minmax(85px, 1fr) 0;
+  padding: 12px 0;
+  gap: 10px;
+  font-size: 10px;
+}
+
+.plugin-shell .history-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.plugin-shell .history-row > span:nth-child(2) {
+  display: block;
+}
+
+.plugin-shell .history-row > span:first-child > span:last-child {
+  min-width: 0;
+}
+
+.plugin-shell .history-row small {
+  font-size: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plugin-shell .small-tool-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.plugin-shell .settings-card {
+  padding: 14px 16px;
+}
+
+.plugin-shell .settings-card dl > div {
+  padding: 11px 0;
+  gap: 14px;
+  font-size: 11px;
+}
+
+.plugin-shell .settings-card dt {
+  flex-shrink: 0;
+}
+
+.plugin-shell .settings-card dd {
+  min-width: 0;
+}
+
+.plugin-shell .settings-card dd code {
+  font-size: 11px;
+}
+
+.plugin-shell .settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #eef1f6;
+}
+
+.plugin-shell .settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.plugin-shell .settings-grid .card {
+  padding: 14px;
+}
+
+.plugin-shell .settings-icon {
+  margin-bottom: 10px;
+}
+
+.plugin-shell .settings-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.plugin-shell .settings-grid h3 {
+  font-size: 12px;
+}
+
+.plugin-shell .settings-grid p {
+  margin-top: 6px;
+  line-height: 1.8;
+  font-size: 11px;
+}
+
+.plugin-shell .settings-footnote {
+  padding: 0 2px;
+  margin-top: 14px;
+  color: #a4afbd;
+}
+
+.plugin-shell .mole-update-panel {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border-color: #dfe8f7;
+  background: linear-gradient(110deg, #f7faff, #fff);
+}
+
+.plugin-shell .mole-update-heading,
+.plugin-shell .mole-update-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.plugin-shell .mole-update-heading {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .mole-update-heading > .primary {
+  flex-shrink: 0;
+}
+
+.plugin-shell .mole-update-icon,
+.plugin-shell .mole-install-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: #5378b9;
+  background: #eaf0fc;
+}
+
+.plugin-shell .mole-update-title h2,
+.plugin-shell .mole-install-body h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: #34445d;
+}
+
+.plugin-shell .mole-update-title p {
+  margin: 3px 0 0;
+  font-size: 10px;
+  color: #8a98ae;
+}
+
+.plugin-shell .mole-update-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 12px;
+  color: #70849f;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.plugin-shell .mole-update-status > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.plugin-shell .mole-update-panel.failed .mole-update-status,
+.plugin-shell .mole-environment-error {
+  color: #b26b5e;
+}
+
+.plugin-shell .mole-update-panel.succeeded .mole-update-status {
+  color: #648d79;
+}
+
+.plugin-shell .mole-update-detail,
+.plugin-shell .mole-update-auth-note {
+  margin: 7px 0 0;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #8a96a8;
+  overflow-wrap: anywhere;
+}
+
+.plugin-shell .mole-update-time {
+  display: block;
+  margin-top: 8px;
+  color: #98a5b7;
+  font-size: 10px;
+}
+
+.plugin-shell .mole-update-progress {
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #e9eef8;
+}
+
+.plugin-shell .mole-update-progress > span {
+  display: block;
+  height: 100%;
+  width: 35%;
+  border-radius: inherit;
+  background: #8ba8dc;
+  animation: mole-update-progress 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes mole-update-progress {
+  from { transform: translateX(-80%); }
+  to { transform: translateX(280%); }
+}
+
+.plugin-shell .mole-install-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 20px;
+  margin-bottom: 14px;
+  border-color: #dce5f3;
+}
+
+.plugin-shell .mole-install-body {
+  min-width: 0;
+}
+
+.plugin-shell .mole-install-body > p {
+  font-size: 11px;
+  line-height: 1.9;
+  margin: 7px 0 0;
+  color: #8593a9;
+}
+
+.plugin-shell .mole-install-command {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  padding: 10px 12px;
+  margin-top: 14px;
+  font-size: 11px;
+  border-radius: 7px;
+  color: #8492a7;
+  background: #f4f7fb;
+}
+
+.plugin-shell .mole-install-command code {
+  color: #4d6280;
+  user-select: all;
+}
+
+.plugin-shell .mole-install-body > .mole-install-help {
+  font-size: 10px;
+}
+
+.plugin-shell .mole-environment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.plugin-shell .mole-update-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(32 44 63 / 25%);
+  backdrop-filter: blur(3px);
+}
+
+.plugin-shell .mole-update-dialog {
+  width: min(420px, calc(100vw - 32px));
+  background: #fff;
+  box-shadow: 0 16px 60px rgb(37 53 80 / 14%);
+}
+
+.plugin-shell .mole-update-dialog form {
+  margin-top: 15px;
+}
+
+.plugin-shell .mole-update-dialog label {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 7px;
+  color: #7888a0;
+}
+
+.plugin-shell .mole-update-dialog input {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #dfe6f1;
+  border-radius: 6px;
+  outline: none;
+  color: #34445d;
+}
+
+.plugin-shell .mole-update-dialog input:focus {
+  border-color: #91a9d7;
+  box-shadow: 0 0 0 3px rgb(100 138 204 / 10%);
+}
+
+@media (max-width: 540px) {
+  .plugin-shell .mole-install-prompt { padding: 14px; gap: 9px; }
+  .plugin-shell .mole-install-icon { display: none; }
+  .plugin-shell .mole-update-title p { font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-shell .mole-update-progress > span { animation: none; width: 100%; opacity: .6; }
+}
+
+.plugin-shell .confirm-dialog {
+  max-height: calc(100dvh - 32px);
+  padding: 22px;
+  overflow-y: auto;
+  border-radius: 12px;
+}
+
+.plugin-shell .confirm-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  margin-bottom: 13px;
+}
+
+.plugin-shell .confirm-dialog h2 {
+  font-size: 18px;
+}
+
+.plugin-shell .confirm-dialog > p {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.plugin-shell .confirm-note {
+  margin-top: 12px;
+  padding: 10px;
+  font-size: 11px;
+}
+
+.plugin-shell .dialog-actions {
+  margin-top: 18px;
+}
+
+.plugin-shell .uninstall-dialog {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.plugin-shell .dialog-apps {
+  max-height: 110px;
+  margin: 14px 0;
+}
+
+.plugin-shell .dialog-file-preview {
+  max-height: 150px;
+}
+
+.plugin-fallback {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 24px;
+  background: #f7f8fa;
+}
+
+.fallback-card {
+  max-width: 440px;
+  text-align: center;
+  background: white;
+  border: 1px solid #e6eaf0;
+  border-radius: 12px;
+  padding: 28px;
+}
+
+.fallback-card .brand-mark {
+  margin: 0 auto 16px;
+}
+
+.fallback-card h1 {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.fallback-card p {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.9;
+  color: #98a4b5;
+}
+
+@media (max-width: 680px) {
+  .plugin-shell {
+    --sidebar-width: 124px;
+  }
+
+  .plugin-shell .page-content {
+    padding: 14px;
+  }
+
+  .plugin-shell .topbar,
+  .plugin-shell .page-footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .plugin-shell .device-mark {
+    display: none;
+  }
+
+  .plugin-shell .app-list-head,
+  .plugin-shell .application-row {
+    grid-template-columns: minmax(0, 1fr) 65px;
+  }
+
+  .plugin-shell .app-list-head > span:nth-child(2),
+  .plugin-shell .application-row > .app-source {
+    display: none;
+  }
+
+  .plugin-shell .app-selection-bar > div > div > span {
+    max-width: 115px;
+  }
+
+  .plugin-shell .task-reference {
+    display: none;
+  }
+}
+
+@media (max-width: 580px) {
+  .plugin-shell {
+    --sidebar-width: 54px;
+  }
+
+  .plugin-shell .sidebar {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .plugin-shell .brand {
+    padding: 0 6px 12px;
+  }
+
+  .plugin-shell .brand > span,
+  .plugin-shell .nav-group > p,
+  .plugin-shell .nav-item > span,
+  .plugin-shell .local-note span,
+  .plugin-shell .sidebar-link span {
+    display: none;
+  }
+
+  .plugin-shell .nav-item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .plugin-shell .nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .plugin-shell .sidebar-bottom {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .plugin-shell .local-note,
+  .plugin-shell .sidebar-link {
+    justify-content: center;
+  }
+
+  .plugin-shell .page-content {
+    padding: 12px;
+  }
+
+  .plugin-shell .window-title > span,
+  .plugin-shell .page-footer > span:last-child {
+    display: none;
+  }
+
+  .plugin-shell .health-summary {
+    width: 80px;
+    flex-basis: 80px;
+    padding-left: 12px;
+  }
+
+  .plugin-shell .device-heading {
+    gap: 7px;
+  }
+
+  .plugin-shell .device-heading .live-pill {
+    font-size: 9px;
+  }
+
+  .plugin-shell .metric-grid {
+    gap: 8px;
+  }
+
+  .plugin-shell .metric-card,
+  .plugin-shell .metric-grid > .metric-card:last-child {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .plugin-shell .metric-value {
+    font-size: 23px;
+  }
+
+  .plugin-shell .network-metric strong {
+    font-size: 19px;
+  }
+
+  .plugin-shell .operation-steps {
+    gap: 3px;
+  }
+
+  .plugin-shell .operation-controls {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .plugin-shell .operation-buttons {
+    margin-left: auto;
+  }
+
+  .plugin-shell .history-row {
+    grid-template-columns: minmax(0, 1fr) 105px 0;
+  }
+
+  .plugin-shell .history-row > span:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .plugin-shell .tool-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .plugin-shell .page-heading,
+  .plugin-shell .uninstall-page .page-heading {
+    align-items: flex-start;
+  }
+
+  .plugin-shell .hero-copy h2 {
+    font-size: 15px;
+  }
+
+  .plugin-shell .hardware-line,
+  .plugin-shell .metric-detail {
+    font-size: 9px;
+  }
+
+  .plugin-shell .storage-card h2 small,
+  .plugin-shell .subtle-label {
+    display: none;
+  }
+
+  .plugin-shell .scan-controls form,
+  .plugin-shell .app-library-controls {
+    flex-wrap: wrap;
+  }
+
+  .plugin-shell .path-input,
+  .plugin-shell .app-search {
+    flex-basis: 100%;
+  }
+
+  .plugin-shell .scan-controls form > .primary {
+    flex: 1;
+  }
+
+  .plugin-shell .settings-grid,
+  .plugin-shell .device-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plugin-shell .app-selection-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+  }
+
+  .plugin-shell .app-selection-bar > div > .text-button {
+    margin-left: auto;
+  }
+
+  .plugin-shell .operation-buttons {
+    width: 100%;
+  }
+
+  .plugin-shell .operation-buttons button {
+    flex: 1;
+  }
+}
+
+@media (max-height: 560px) {
+  .plugin-shell .sidebar {
+    padding-top: 10px;
+  }
+
+  .plugin-shell .brand {
+    padding-bottom: 10px;
+  }
+
+  .plugin-shell .nav-group {
+    margin-bottom: 8px;
+  }
+
+  .plugin-shell .nav-item {
+    height: 30px;
+    margin: 2px 0;
+  }
+
+  .plugin-shell .sidebar-bottom {
+    margin-top: 5px;
+    padding-top: 8px;
+  }
+}
+
+/* Graphical maintenance: review lists, confirmation and authentication. */
+.plugin-shell .maintenance-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.plugin-shell .maintenance-heading {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.plugin-shell .maintenance-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plugin-shell .maintenance-title > div {
+  min-width: 0;
+}
+
+.plugin-shell .maintenance-heading h1 {
+  font-size: 16px;
+}
+
+.plugin-shell .maintenance-heading p {
+  line-height: 1.6;
+  margin-top: 3px;
+}
+
+.plugin-shell .maintenance-icon {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.plugin-shell .maintenance-stepbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.plugin-shell .maintenance-stepbar > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 10px;
+  color: #8e9eaa;
+  white-space: nowrap;
+}
+
+.plugin-shell .maintenance-stepbar .operation-steps > svg {
+  transform: rotate(-90deg);
+}
+
+.plugin-shell .maintenance-status {
+  display: flex;
+  flex-shrink: 0;
+  gap: 9px;
+  align-items: center;
+  border: 1px solid #e3e9f3;
+  border-radius: 8px;
+  background: #f1f5fc;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+  color: #7897c7;
+}
+
+.plugin-shell .maintenance-status.success {
+  background: #f3f8f5;
+  border-color: #e3eee7;
+  color: #82a18f;
+}
+
+.plugin-shell .maintenance-status.warning {
+  background: #fffbf3;
+  border-color: #eee4d2;
+  color: #b19975;
+}
+
+.plugin-shell .maintenance-status > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.plugin-shell .maintenance-status strong {
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.plugin-shell .maintenance-status p {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #8d9db0;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.plugin-shell .maintenance-status-icon {
+  display: flex;
+}
+
+.plugin-shell .maintenance-status .text-button {
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-elapsed {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: #9aa8ba;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-library {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 140px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.plugin-shell .maintenance-library-heading {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 13px 9px;
+}
+
+.plugin-shell .maintenance-library-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.plugin-shell .maintenance-library-heading h2 span {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #eef2f8;
+  color: #8797b0;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.plugin-shell .maintenance-library-heading > span {
+  color: #9ba7b8;
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-filters {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 13px 10px;
+}
+
+.plugin-shell .maintenance-filters select {
+  max-width: 140px;
+  min-width: 90px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 10px;
+  color: #7b8da7;
+  background: white;
+  border: 1px solid #e7ecf3;
+  border-radius: 7px;
+}
+
+.plugin-shell .maintenance-list-head,
+.plugin-shell .maintenance-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+}
+
+.plugin-shell .maintenance-list-head.with-selection,
+.plugin-shell .maintenance-row.with-selection {
+  grid-template-columns: 15px minmax(0, 1fr) 78px;
+}
+
+.plugin-shell .maintenance-list-head {
+  flex-shrink: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background: #fafbfc;
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid #edf0f5;
+  color: #9ca8b9;
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-list-head > span:last-child {
+  text-align: right;
+}
+
+.plugin-shell .maintenance-items {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #d5dce6 transparent;
+}
+
+.plugin-shell .maintenance-row {
+  min-height: 58px;
+  border-bottom: 1px solid #eff2f6;
+}
+
+.plugin-shell .maintenance-row:last-child {
+  border-bottom: 0;
+}
+
+.plugin-shell .maintenance-row:hover {
+  background: #fbfcff;
+}
+
+.plugin-shell .maintenance-row.selected {
+  background: #f2f6ff;
+}
+
+.plugin-shell .maintenance-page input[type=checkbox] {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1.5px solid #ccd6e4;
+  border-radius: 4px;
+  background: white;
+}
+
+.plugin-shell .maintenance-page input[type=checkbox]:checked {
+  background: #5c82d2;
+  border-color: #5c82d2;
+}
+
+.plugin-shell .maintenance-page input[type=checkbox]:checked::after {
+  content: '';
+  width: 7px;
+  height: 4px;
+  border-bottom: 2px solid white;
+  border-left: 2px solid white;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.plugin-shell .maintenance-page input[type=checkbox]:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.plugin-shell .maintenance-item-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+
+.plugin-shell .maintenance-row.with-selection .maintenance-item-title {
+  cursor: pointer;
+}
+
+.plugin-shell .maintenance-item-icon {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 29px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.plugin-shell .maintenance-item-title > span:last-child {
+  min-width: 0;
+}
+
+.plugin-shell .maintenance-item-title strong,
+.plugin-shell .maintenance-item-title small,
+.plugin-shell .maintenance-item-title em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-shell .maintenance-item-title strong {
+  color: #53657f;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.plugin-shell .maintenance-item-title small {
+  margin-top: 3px;
+  font-size: 10px;
+  color: #9aa8bb;
+}
+
+.plugin-shell .maintenance-item-title em {
+  margin-top: 3px;
+  font-size: 9px;
+  color: #ad9a7d;
+  font-style: normal;
+}
+
+.plugin-shell .maintenance-item-state {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 10px;
+  color: #8293ab;
+  white-space: nowrap;
+}
+
+.plugin-shell .maintenance-item-state.removed {
+  color: #7da38d;
+}
+
+.plugin-shell .maintenance-item-state.skipped {
+  color: #b39b76;
+}
+
+.plugin-shell .maintenance-list-note {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 13px;
+  border-top: 1px solid #edf0f5;
+  color: #9aa8b9;
+  background: #fbfcfd;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.plugin-shell .maintenance-list-note svg {
+  margin-top: 1px;
+}
+
+.plugin-shell .maintenance-list-empty {
+  display: flex;
+  min-height: 100px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  color: #9cafc9;
+  text-align: center;
+}
+
+.plugin-shell .maintenance-list-empty strong {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.plugin-shell .maintenance-list-empty p {
+  font-size: 11px;
+  color: #a5b0bf;
+}
+
+.plugin-shell .maintenance-load-more {
+  padding: 12px;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: #7d97bd;
+}
+
+.plugin-shell .maintenance-empty {
+  display: flex;
+  flex: 1;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px;
+  text-align: center;
+}
+
+.plugin-shell .maintenance-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  margin-bottom: 18px;
+}
+
+.plugin-shell .maintenance-empty h2 {
+  font-size: 15px;
+  color: #7389a9;
+  font-weight: 500;
+}
+
+.plugin-shell .maintenance-empty p {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9aa8bb;
+  line-height: 1.8;
+}
+
+.plugin-shell .maintenance-empty > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 22px;
+  color: #a1afc1;
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-empty i {
+  height: 3px;
+  width: 3px;
+  border-radius: 50%;
+  background: #c4cfdd;
+  margin: 0 4px;
+}
+
+.plugin-shell .maintenance-detail {
+  flex-shrink: 0;
+  margin-top: 5px;
+  border-top: 1px solid #e8edf3;
+}
+
+.plugin-shell .maintenance-detail summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 1px;
+  color: #8b9ab0;
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-detail summary > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.plugin-shell .maintenance-detail summary small {
+  color: #aeb9c8;
+  font-size: 9px;
+}
+
+.plugin-shell .maintenance-progress-steps,
+.plugin-shell .maintenance-messages {
+  max-height: 150px;
+  overflow: auto;
+  scrollbar-width: thin;
+  padding: 2px 1px 8px;
+}
+
+.plugin-shell .maintenance-progress-steps > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px 0;
+  color: #8aa1c0;
+}
+
+.plugin-shell .maintenance-progress-steps strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.plugin-shell .maintenance-progress-steps small {
+  display: block;
+  font-size: 10px;
+  color: #9eaabd;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.plugin-shell .maintenance-messages p {
+  font-size: 10px;
+  color: #92a0b3;
+  padding: 5px 0;
+  overflow-wrap: anywhere;
+}
+
+.plugin-shell .maintenance-messages p.warning {
+  color: #b09a7c;
+}
+
+.plugin-shell .maintenance-action-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  border: 1px solid #dfe7f3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.plugin-shell .maintenance-action-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.plugin-shell .maintenance-action-bar strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.plugin-shell .maintenance-action-bar small {
+  display: block;
+  font-size: 10px;
+  color: #99a7bb;
+  margin-top: 3px;
+}
+
+.plugin-shell .maintenance-running-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #90a2bc;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.plugin-shell .maintenance-auth {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #dce6f5;
+  border-radius: 8px;
+  color: #8199be;
+  background: #f7faff;
+}
+
+.plugin-shell .maintenance-auth > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.plugin-shell .maintenance-auth label {
+  font-size: 12px;
+  color: #667f9f;
+}
+
+.plugin-shell .maintenance-auth p {
+  font-size: 10px;
+  margin: 4px 0 9px;
+  color: #98a8bd;
+}
+
+.plugin-shell .maintenance-auth > div > div {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.plugin-shell .maintenance-auth input {
+  flex: 1;
+  min-width: 110px;
+  background: #fff;
+  padding: 7px 9px;
+  border: 1px solid #dbe5f2;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #536a8b;
+}
+
+.plugin-shell .maintenance-confirm-items {
+  max-height: 160px;
+  overflow: auto;
+  border: 1px solid #e9edf3;
+  border-radius: 7px;
+  padding: 0 10px;
+}
+
+.plugin-shell .maintenance-confirm-items > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #eef2f6;
+  padding: 9px 0;
+  font-size: 10px;
+  color: #8799b3;
+}
+
+.plugin-shell .maintenance-confirm-items > div:last-child {
+  border-bottom: 0;
+}
+
+.plugin-shell .maintenance-confirm-items span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.plugin-shell .maintenance-confirm-items strong {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.plugin-shell .maintenance-confirm-items > p {
+  font-size: 10px;
+  padding: 10px 0;
+}
+
+.plugin-shell .maintenance-result-counts {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 20px;
+  padding: 0 2px 10px;
+  color: #8ba397;
+  font-size: 11px;
+}
+
+.plugin-shell .maintenance-result-counts > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@media (max-width: 680px) {
+  .plugin-shell .maintenance-stepbar > span {
+    display: none;
+  }
+
+  .plugin-shell .maintenance-title {
+    gap: 8px;
+  }
+
+  .plugin-shell .maintenance-elapsed {
+    display: none;
+  }
+
+  .plugin-shell .maintenance-auth > div > div > input {
+    flex-basis: 100%;
+  }
+
+  .plugin-shell .maintenance-library-heading > span {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .plugin-shell .maintenance-icon {
+    display: none;
+  }
+
+  .plugin-shell .maintenance-filters select {
+    max-width: 95px;
+    min-width: 0;
+  }
+
+  .plugin-shell .maintenance-row,
+  .plugin-shell .maintenance-list-head {
+    gap: 7px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .plugin-shell .maintenance-row.with-selection,
+  .plugin-shell .maintenance-list-head.with-selection {
+    grid-template-columns: 15px minmax(0, 1fr) 60px;
+  }
+
+  .plugin-shell .maintenance-action-bar {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .plugin-shell .maintenance-action-bar > .primary {
+    margin-left: auto;
+  }
+
+  .plugin-shell .maintenance-library-heading > span {
+    display: none;
+  }
+}
+
+.plugin-shell .maintenance-status.success > div:nth-child(2) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.plugin-shell .maintenance-status.success p {
+  margin: 0;
+}
+
+.plugin-shell .maintenance-report-detail {
+  max-height: 150px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.plugin-shell .maintenance-report-detail > div {
+  max-height: none;
+  overflow: visible;
+}

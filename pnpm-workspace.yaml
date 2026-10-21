@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: true
+registries:
+  default: https://registry.npmjs.org/
+verifyDepsBeforeRun: false

@@ -171,8 +171,8 @@ export function App() {
     return <div className="plugin-fallback">
       <div className="fallback-card">
         <div className="brand-mark"><TerminalIcon size={22} /></div>
-        <h1>请在 uTools 中打开 Mole 控制台</h1>
-        <p>这个界面依赖 uTools 的本地能力来调用本机 mo 命令。安装插件后从 uTools 搜索 Mole 即可使用。</p>
+        <h1>请在 uTools 中打开 LiberClean</h1>
+        <p>LiberClean 通过 uTools 调用本机 Mole。安装插件后，在 uTools 中搜索 LiberClean 即可使用。</p>
       </div>
     </div>;
   }
@@ -182,9 +182,9 @@ export function App() {
 
   return <div className="app-shell plugin-shell">
     <aside className="sidebar">
-      <a className="brand" href="#overview" aria-label="Mole 系统概览" onClick={event => { event.preventDefault(); navigate('overview'); }}>
+      <a className="brand" href="#overview" aria-label="LiberClean 系统概览" onClick={event => { event.preventDefault(); navigate('overview'); }}>
         <div className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 29V14l6-4 5 9 5-9 6 4v15h-7v-8l-4 7-4-7v8z" fill="currentColor" /></svg></div>
-        <span>Mole<span className="brand-sub">UTOOLS</span></span>
+        <span>LiberClean<span className="brand-sub">UTOOLS</span></span>
       </a>
       <nav aria-label="主导航">
         {['概览', '维护工具', '更多'].map(group => <div className="nav-group" key={group}>
@@ -501,7 +501,7 @@ function SettingsPage({ environment, environmentError, onRefresh, onEnvironment,
       <section className="card"><div className="settings-icon"><LockKeyhole size={22} /></div><h3>只在本机运行</h3><p>插件调用本机 Mole 完成分析和维护，文件信息与运行记录保存在本机。</p></section>
       <section className="card"><div className="settings-icon"><Folder size={22} /></div><h3>文件访问权限</h3><p>部分目录需要 macOS 授权。若扫描结果不完整，请在系统设置的隐私与安全性中为 uTools 授予必要权限。</p></section>
       <section className="card"><div className="settings-icon"><Command size={22} /></div><h3>图形操作</h3><p>先检查维护范围，再勾选项目并确认。需要管理员权限时，在页面中输入 Mac 登录密码，也可以跳过需要管理员权限的步骤。</p></section>
-      <section className="card"><div className="settings-icon"><CircleHelp size={22} /></div><h3>关于 Mole</h3><p>清理规则、文件保护和管理员授权由已安装的 Mole 执行。这个插件只提供界面，不修改 Mole 的行为。</p><a href="https://github.com/tw93/Mole" target="_blank" rel="noreferrer">了解 Mole <ExternalLink size={13} /></a></section>
+      <section className="card"><div className="settings-icon"><CircleHelp size={22} /></div><h3>关于 LiberClean</h3><p>LiberClean 通过图形界面管理本机维护操作，清理规则、文件保护和管理员授权由已安装的 Mole 执行。</p><a href="https://github.com/zdkcomeon/liberClean" target="_blank" rel="noreferrer">项目主页 <ExternalLink size={13} /></a></section>
     </div>
     <div className="empty-feature-row settings-footnote"><span><Monitor size={14} /> uTools {environment?.platform === 'darwin' ? 'macOS' : environment?.platform || ''}</span><span><ShieldCheck size={14} /> 本机会话</span><span><Clock3 size={14} /> 打开时检测安装状态</span></div>
   </>;

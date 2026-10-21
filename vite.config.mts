@@ -36,7 +36,7 @@ function utoolsPackage(): Plugin {
       }
       fs.copyFileSync(path.join(root, 'logo.png'), path.join(outDir, 'logo.png'));
       fs.writeFileSync(path.join(outDir, 'package.json'), `${JSON.stringify({
-        name: 'mole-console',
+        name: 'liberclean',
         version: manifest.version || '0.1.0',
         private: true,
         type: 'commonjs'

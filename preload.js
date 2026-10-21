@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Mole Console for uTools.
+ * LiberClean for uTools.
  *
  * The bridge calls the locally installed `mo` command directly. It never
  * opens a port or evaluates user input as a shell command. Explicit updates
@@ -1396,4 +1396,4 @@ window.mole = {
   getPaths: () => ({ logFile: LOG_FILE })
 };
 
-logEvent('plugin.loaded', { version: '0.1.0' });
+logEvent('plugin.loaded', { name: 'LiberClean', version: '0.1.0' });

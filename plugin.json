@@ -1,9 +1,9 @@
 {
-  "name": "mole-console",
+  "name": "LiberClean",
   "version": "0.1.0",
-  "description": "在 uTools 中查看 Mac 状态、分析磁盘并执行 Mole 维护操作",
-  "author": "Mole Console",
-  "homepage": "https://github.com/tw93/Mole",
+  "description": "LiberClean：在 uTools 中查看 Mac 状态，以图形界面完成清理、卸载和系统维护",
+  "author": "LiberClean",
+  "homepage": "https://github.com/zdkcomeon/liberClean",
   "main": "index.html",
   "logo": "logo.png",
   "preload": "preload.js",
@@ -18,12 +18,12 @@
     {
       "code": "mole-overview",
       "platform": "darwin",
-      "description": "打开 Mole 本机控制台",
+      "description": "打开 LiberClean，查看本机状态和维护工具",
       "cmds": [
+        "LiberClean",
+        "LiberClean 控制台",
         "Mole",
-        "Mole 控制台",
-        "mo",
-        "Mole Web"
+        "mo"
       ]
     },
     {
@@ -31,6 +31,7 @@
       "platform": "darwin",
       "description": "分析目录与磁盘占用",
       "cmds": [
+        "LiberClean 磁盘分析",
         "Mole 磁盘分析",
         "磁盘占用分析"
       ]
@@ -40,6 +41,8 @@
       "platform": "darwin",
       "description": "预览或执行深度清理",
       "cmds": [
+        "LiberClean 深度清理",
+        "LiberClean 清理",
         "Mole 深度清理",
         "Mole 清理"
       ]
@@ -49,6 +52,8 @@
       "platform": "darwin",
       "description": "选择应用并检查关联文件后卸载",
       "cmds": [
+        "LiberClean 应用卸载",
+        "LiberClean 卸载",
         "Mole 应用卸载",
         "Mole 卸载"
       ]
@@ -58,6 +63,8 @@
       "platform": "darwin",
       "description": "刷新缓存并执行系统优化",
       "cmds": [
+        "LiberClean 系统优化",
+        "LiberClean 优化",
         "Mole 系统优化",
         "Mole 优化"
       ]
@@ -67,6 +74,7 @@
       "platform": "darwin",
       "description": "清理旧项目的依赖与构建产物",
       "cmds": [
+        "LiberClean 项目清理",
         "Mole 项目清理",
         "Mole 开发缓存"
       ]
@@ -76,6 +84,7 @@
       "platform": "darwin",
       "description": "查找并移除安装包",
       "cmds": [
+        "LiberClean 安装包清理",
         "Mole 安装包清理",
         "Mole 安装包"
       ]
@@ -85,6 +94,7 @@
       "platform": "darwin",
       "description": "查看 Mole 操作记录",
       "cmds": [
+        "LiberClean 操作记录",
         "Mole 历史",
         "Mole 操作记录"
       ]

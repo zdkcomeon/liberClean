@@ -42,9 +42,12 @@ html, body, #root {
   box-shadow: none;
 }
 
-.plugin-shell .brand-mark svg {
-  width: 29px;
-  height: 29px;
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
 }
 
 .plugin-shell .brand-sub {

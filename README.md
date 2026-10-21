@@ -1,5 +1,7 @@
 # LiberClean
 
+<img src="./logo.png" width="96" height="96" alt="LiberClean logo" />
+
 LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools 插件，为 macOS 提供系统状态查看、磁盘分析、应用卸载和日常维护的图形界面。
 
 界面按插件小窗口设计，支持先检查、再选择和确认操作。实际维护由本机安装的 Mole 执行。

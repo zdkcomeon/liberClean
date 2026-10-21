@@ -1396,4 +1396,4 @@ window.mole = {
   getPaths: () => ({ logFile: LOG_FILE })
 };
 
-logEvent('plugin.loaded', { name: 'LiberClean', version: '0.1.0' });
+logEvent('plugin.loaded', { name: 'LiberClean', version: '0.1.1' });

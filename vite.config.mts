@@ -37,12 +37,12 @@ function utoolsPackage(): Plugin {
       fs.copyFileSync(path.join(root, 'logo.png'), path.join(outDir, 'logo.png'));
       fs.writeFileSync(path.join(outDir, 'package.json'), `${JSON.stringify({
         name: 'liberclean',
-        version: manifest.version || '0.1.0',
+        version: manifest.version || '0.1.1',
         private: true,
         type: 'commonjs'
       }, null, 2)}\n`);
 
-      for (const name of ['plugin.json', 'preload.js', 'maintenance.js', 'maintenance-helper.sh', 'mole-update.js', 'package.json', 'index.html', 'logo.png', 'favicon.svg', 'assets']) {
+      for (const name of ['plugin.json', 'preload.js', 'maintenance.js', 'maintenance-helper.sh', 'mole-update.js', 'package.json', 'index.html', 'logo.png', 'favicon.png', 'assets']) {
         if (!fs.existsSync(path.join(outDir, name))) throw new Error(`缺少插件文件：${name}`);
       }
     }

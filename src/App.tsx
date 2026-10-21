@@ -6,6 +6,7 @@ import {
   Sparkles, Terminal as TerminalIcon, Trash2, TriangleAlert, WandSparkles, Wifi, X, type LucideIcon
 } from 'lucide-react';
 import { bytes, dateTime, duration, mole, percent, rate, shortPath, type MoleBridge } from './api';
+import logoUrl from '../logo.png';
 import { MaintenancePage } from './MaintenancePage';
 import { UninstallPage } from './UninstallPage';
 import { MoleInstallationPrompt, MoleUpdatePanel, MoleUpdatePasswordDialog } from './MoleEnvironment';
@@ -170,7 +171,7 @@ export function App() {
   if (!mole) {
     return <div className="plugin-fallback">
       <div className="fallback-card">
-        <div className="brand-mark"><TerminalIcon size={22} /></div>
+        <div className="brand-mark"><img src={logoUrl} alt="" /></div>
         <h1>请在 uTools 中打开 LiberClean</h1>
         <p>LiberClean 通过 uTools 调用本机 Mole。安装插件后，在 uTools 中搜索 LiberClean 即可使用。</p>
       </div>
@@ -183,7 +184,7 @@ export function App() {
   return <div className="app-shell plugin-shell">
     <aside className="sidebar">
       <a className="brand" href="#overview" aria-label="LiberClean 系统概览" onClick={event => { event.preventDefault(); navigate('overview'); }}>
-        <div className="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M9 29V14l6-4 5 9 5-9 6 4v15h-7v-8l-4 7-4-7v8z" fill="currentColor" /></svg></div>
+        <div className="brand-mark"><img src={logoUrl} alt="" /></div>
         <span>LiberClean<span className="brand-sub">UTOOLS</span></span>
       </a>
       <nav aria-label="主导航">

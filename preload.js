@@ -56,6 +56,7 @@ let activeTaskId = '';
 let applicationInventory = { state: 'ready', apps: [], updatedAt: null, error: '' };
 let applicationsPromise = null;
 let applicationsLoadedAt = 0;
+const applicationIcons = new Map();
 
 let enterAction = null;
 let pluginVisible = true;
@@ -676,6 +677,7 @@ function getApplications(refresh) {
       try {
         const output = await runCapture(environment.moPath, ['uninstall', '--list'], 90000, 8 * 1024 * 1024);
         applicationInventory = { state: 'ready', apps: decodeApplications(parseJsonArray(output)), updatedAt: isoNow(), error: '' };
+        applicationIcons.clear();
         applicationsLoadedAt = Date.now();
         logEvent('apps.loaded', { count: applicationInventory.apps.length, elapsedMs: Date.now() - started });
       } catch (error) {
@@ -693,6 +695,37 @@ function getApplications(refresh) {
     })();
     return applicationsPromise;
   });
+}
+
+/** Read only inventoried application paths, and keep icon data out of task snapshots. */
+function getApplicationIcon(id) {
+  const app = applicationInventory.apps.find(item => item.id === id);
+  if (!app || typeof utools === 'undefined') return Promise.resolve(null);
+  if (applicationIcons.has(app.path)) return applicationIcons.get(app.path);
+  const readIcon = typeof utools.getFileIconAsync === 'function' ? () => utools.getFileIconAsync(app.path)
+    : typeof utools.getFileIcon === 'function' ? () => utools.getFileIcon(app.path) : null;
+  if (!readIcon) return Promise.resolve(null);
+
+  const pending = Promise.resolve().then(async () => {
+    const started = Date.now();
+    const context = { id: app.id, path: app.path };
+    logEvent('apps.icon_loading', context);
+    try {
+      const icon = await readIcon();
+      if (typeof icon !== 'string' || icon.length > MAX_OUTPUT || !/^data:image\/(?:png|jpeg|webp|gif|bmp|x-icon|vnd.microsoft.icon);base64,[A-Za-z0-9+/]+={0,2}$/.test(icon)) {
+        throw new Error('Native icon API returned an invalid image');
+      }
+      logEvent('apps.icon_loaded', { ...context, bytes: icon.length, elapsedMs: Date.now() - started });
+      return icon;
+    } catch (error) {
+      logEvent('apps.icon_failed', { ...context, error: cleanMessage(error && (error.stack || error.message) || error), elapsedMs: Date.now() - started });
+      return null;
+    }
+  });
+  // Cache failures as well, so scrolling never repeatedly retries a missing icon.
+  if (applicationIcons.size >= 256) applicationIcons.delete(applicationIcons.keys().next().value);
+  applicationIcons.set(app.path, pending);
+  return pending;
 }
 
 function resolveApps(ids) {
@@ -1365,7 +1398,7 @@ if (typeof utools !== 'undefined' && utools) {
 process.on('exit', killAllTasks);
 
 window.mole = {
-  version: 3,
+  version: 4,
   getEnvironment: () => getEnvironment(false),
   refreshEnvironment,
   getMoleUpdate: updater.getState,
@@ -1383,6 +1416,7 @@ window.mole = {
   detachTask,
   subscribeTasks,
   getApplications,
+  getApplicationIcon,
   getHistory,
   uninstallAction,
   maintenanceAction: (id, action) => publicTask(maintenance.action(id, action)),

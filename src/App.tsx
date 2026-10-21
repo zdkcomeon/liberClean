@@ -5,11 +5,12 @@ import {
   LayoutDashboard, Loader2, LockKeyhole, MemoryStick, Monitor, RefreshCw, Search, Settings2, ShieldCheck,
   Sparkles, Terminal as TerminalIcon, Trash2, TriangleAlert, WandSparkles, Wifi, X, type LucideIcon
 } from 'lucide-react';
-import { bytes, dateTime, duration, mole, percent, rate, shortPath, type MoleBridge } from './api';
+import { bytes, dateTime, duration, mole, percent, previewMode, rate, shortPath, type MoleBridge } from './api';
 import logoUrl from '../logo.png';
 import { MaintenancePage } from './MaintenancePage';
 import { UninstallPage } from './UninstallPage';
 import { MoleInstallationPrompt, MoleUpdatePanel, MoleUpdatePasswordDialog } from './MoleEnvironment';
+import { PreviewControls } from './PreviewControls';
 import {
   isActive, isUpdatingMole, stateLabels,
   type EnterAction, type Environment, type MaintenanceOperation, type MoleHistory, type Operation, type Page, type ScanReport,
@@ -44,6 +45,10 @@ const enterPages: Record<string, Page> = {
   'mole-history': 'history'
 };
 
+const toolSummaries: Partial<Record<Operation, string>> = {
+  clean: '清理缓存与日志', uninstall: '移除应用与残留', optimize: '维护系统服务', purge: '整理依赖与构建', installer: '清理下载的安装包'
+};
+
 const pageFromHash = (): Page => {
   const value = location.hash.slice(1);
   return nav.some(item => item.page === value) ? value as Page : 'overview';
@@ -72,6 +77,22 @@ export function App() {
   }, []);
 
   useEffect(() => { content.current?.scrollTo({ top: 0 }); }, [page]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      document.documentElement.dataset.inputMethod = 'keyboard';
+      if ((!event.metaKey && !event.ctrlKey) || event.altKey || event.shiftKey || event.repeat || !/^[1-9]$/.test(event.key)) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable], [role="dialog"]') || document.querySelector('dialog[open]')) return;
+      event.preventDefault();
+      navigate(nav[Number(event.key) - 1].page);
+      content.current?.focus({ preventScroll: true });
+    };
+    const onPointerDown = () => { document.documentElement.dataset.inputMethod = 'pointer'; };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => { window.removeEventListener('keydown', onKeyDown); window.removeEventListener('pointerdown', onPointerDown); };
+  }, [navigate]);
 
   const applyStatus = useCallback((next: StatusState) => {
     setStatus(next);
@@ -182,15 +203,16 @@ export function App() {
   const pageTask = operation ? tasks.find(task => task.operation === operation) : undefined;
 
   return <div className="app-shell plugin-shell">
+    <a className="skip-link" href="#page-content" onClick={event => { event.preventDefault(); content.current?.focus(); }}>跳到主要内容</a>
     <aside className="sidebar">
       <a className="brand" href="#overview" aria-label="LiberClean 系统概览" onClick={event => { event.preventDefault(); navigate('overview'); }}>
         <div className="brand-mark"><img src={logoUrl} alt="" /></div>
-        <span>LiberClean<span className="brand-sub">UTOOLS</span></span>
+        <span>LiberClean<span className="brand-sub">让 Mac 保持轻盈</span></span>
       </a>
       <nav aria-label="主导航">
         {['概览', '维护工具', '更多'].map(group => <div className="nav-group" key={group}>
           <p>{group}</p>
-          {nav.filter(item => item.group === group).map(item => <a key={item.page} href={`#${item.page}`} title={item.label} aria-label={item.label} aria-current={page === item.page ? 'page' : undefined} className={`nav-item ${page === item.page ? 'active' : ''}`} onClick={event => { event.preventDefault(); navigate(item.page); }}>
+          {nav.filter(item => item.group === group).map(item => <a key={item.page} href={`#${item.page}`} title={`${item.label} · ⌘ / Ctrl ${nav.indexOf(item) + 1}`} aria-label={item.label} aria-keyshortcuts={`Meta+${nav.indexOf(item) + 1} Control+${nav.indexOf(item) + 1}`} aria-current={page === item.page ? 'page' : undefined} className={`nav-item ${page === item.page ? 'active' : ''}`} onClick={event => { event.preventDefault(); navigate(item.page); }}>
             <item.icon size={18} strokeWidth={1.8} /><span>{item.label}</span>
             {item.page === active?.operation && <span className="nav-task-dot" aria-label="任务运行中" />}
           </a>)}
@@ -203,14 +225,14 @@ export function App() {
     </aside>
     <div className="main-shell">
       <header className="topbar">
-        <div className="window-title"><strong>{nav.find(item => item.page === page)?.label}</strong><span>本机工具</span></div>
+        <div className="window-title"><strong>{nav.find(item => item.page === page)?.label}</strong><span className={previewMode ? 'preview-label' : undefined}>{previewMode ? <><span className="preview-label-full">预览模式 · </span>示例数据</> : 'MAC 维护工具'}</span></div>
         <div className="topbar-right">
           <button className="machine-button" title={snapshot?.host || '查看本机环境设置'} onClick={() => navigate('settings')}>
             <span className={`connection-dot ${environment?.ready && !updating ? 'online' : ''}`} /><span>{updating ? 'Mole 更新中' : environment?.ready ? 'Mole 已就绪' : '检查运行环境'}</span><Settings2 size={14} />
           </button>
         </div>
       </header>
-      <main ref={content} className={`page-content page-${page}`}>
+      <main ref={content} id="page-content" tabIndex={-1} aria-label={nav.find(item => item.page === page)?.label} className={`page-content page-${page}`}>
         {error && <Notice tone="warning">{error}<button aria-label="关闭错误提示" onClick={() => setError('')}><X size={15} /></button></Notice>}
         {environmentError && <Notice tone="warning">{environmentError}</Notice>}
         {environment && !environment.ready && !updating && <MoleInstallationPrompt environment={environment} onRefresh={refreshEnvironment} onEnvironment={setEnvironment} />}
@@ -220,6 +242,7 @@ export function App() {
           <button onClick={() => navigate(active.operation)}>回到任务 <ArrowRight size={14} /></button>
         </div>}
         {page === 'overview' && environment?.ready && <Overview status={status} trend={trend} tasks={tasks} navigate={navigate} openTask={task => navigate(task.operation)} />}
+        {page === 'overview' && !environment && !environmentError && <div className="overview-loading" role="status" aria-busy="true"><div className="skeleton skeleton-device" /><div className="metric-grid">{[0, 1, 2].map(index => <div className="skeleton skeleton-metric" key={index} />)}</div><div className="skeleton skeleton-storage" /><span><Loader2 size={15} className="spin" />正在连接本机，读取设备状态…</span></div>}
         {page === 'analyze' && <AnalyzePage task={pageTask} environment={environment} busy={updating || !!active && active.operation !== 'analyze'} onStart={startTask} onStop={stopTask} now={now} />}
         {page === 'uninstall' && <UninstallPage ready={!!environment?.ready && !updating} task={pageTask} active={active} onTask={task => setTasks(previous => [task, ...previous.filter(item => item.id !== task.id)])} onCancel={() => pageTask && stopTask(pageTask)} />}
         {operation && operation !== 'analyze' && operation !== 'uninstall' && <MaintenancePage key={operation} operation={operation as MaintenanceOperation} tool={operations[operation]} task={pageTask} ready={!!environment?.ready && !updating} home={environment?.home} busy={updating || !!active && active.operation !== operation} now={now} onStart={startTask} onStop={stopTask} onTask={task => setTasks(previous => [task, ...previous.filter(item => item.id !== task.id)])} />}
@@ -227,11 +250,12 @@ export function App() {
         {page === 'settings' && <SettingsPage environment={environment} environmentError={environmentError} onRefresh={refreshEnvironment} onEnvironment={setEnvironment} update={moleUpdate} taskBusy={!!active} onUpdate={updateMole} />}
       </main>
       <footer className="page-footer">
-        <span><span className={`connection-dot ${status.state === 'live' ? 'online' : ''}`} />{status.state === 'live' ? '本机数据已连接' : status.state === 'starting' ? '正在读取系统状态' : '等待本机数据'}</span>
-        <span>{updating ? 'Mole 更新中，请等待完成' : active ? `${operations[active.operation].title}正在运行` : '所有操作由本机 Mole 执行'}</span>
+        <span><span className={`connection-dot ${status.state === 'live' ? 'online' : ''}`} />{status.state === 'live' ? '本机数据已连接' : status.state === 'starting' ? '正在读取系统状态' : '系统状态暂不可用'}</span>
+        <span>{previewMode ? '示例操作不会修改本机文件' : updating ? 'Mole 更新中，请等待完成' : active ? `${operations[active.operation].title}正在运行` : '本机处理 · 确认后执行'}</span>
       </footer>
     </div>
     {moleUpdate?.phase === 'authorizing' && <MoleUpdatePasswordDialog update={moleUpdate} onUpdate={setMoleUpdate} />}
+    {previewMode && <PreviewControls />}
   </div>;
 }
 
@@ -265,38 +289,41 @@ function Overview({ status, trend, tasks, navigate, openTask }: {
   const networks = snapshot?.network;
   const down = networks?.length && networks.every(item => item.rxRateMbs != null) ? networks.reduce((sum, item) => sum + item.rxRateMbs!, 0) : undefined;
   const up = networks?.length && networks.every(item => item.txRateMbs != null) ? networks.reduce((sum, item) => sum + item.txRateMbs!, 0) : undefined;
-  const cpuTrend = trend.map(point => point.cpu).filter((value): value is number => typeof value === 'number');
-  const memoryTrend = trend.map(point => point.memory).filter((value): value is number => typeof value === 'number');
+  const cpuTrend = trend.map(point => point.cpu).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  const memoryTrend = trend.map(point => point.memory).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   const battery = snapshot?.batteries?.[0];
   const usage = disk ? Math.min(100, Math.max(0, disk.usedPercent)) : undefined;
+  const health = snapshot?.healthScore != null && Number.isFinite(snapshot.healthScore) ? snapshot.healthScore : undefined;
+  const healthTone = health == null ? 'pending' : health >= 80 ? 'good' : 'attention';
 
   return <>
     {status.state === 'error' && <Notice tone="warning">{status.error || '监控暂不可用'}{snapshot && '。当前展示最近一次采集结果。'}</Notice>}
     <section className="overview-hero" aria-label="设备概况">
-      <div className="device-mark"><Monitor size={25} strokeWidth={1.5} /></div>
+      <div className="device-mark"><Monitor size={28} strokeWidth={1.5} /><span className={`device-status ${fresh ? 'connected' : ''}`} /></div>
       <div className="hero-copy">
-        <div className="device-heading"><h2>{snapshot?.hardware?.model || '我的 Mac'}</h2><span className={`live-pill ${fresh ? '' : 'muted'}`}><span className="live-dot" />{fresh ? '实时更新' : status.state === 'starting' ? '正在连接' : '等待更新'}</span></div>
+        <div className="device-heading"><h1>{snapshot?.hardware?.model || '我的 Mac'}</h1><span className={`live-pill ${fresh ? '' : 'muted'}`}><span className="live-dot" />{fresh ? '实时更新' : status.state === 'starting' ? '正在连接' : '等待更新'}</span></div>
         <div className="hardware-line"><span>{snapshot?.hardware?.cpuModel || '等待硬件信息'}</span><i /><span>{snapshot?.hardware?.totalRam || (snapshot?.memory?.total ? bytes(snapshot.memory.total) : '—')} 内存</span></div>
         <div className="hero-bottom"><span>{snapshot?.hardware?.osVersion || 'macOS'}</span><span>已运行 {snapshot?.uptime || '—'}</span></div>
       </div>
-      <div className="health-summary"><div className="health-number">{snapshot?.healthScore ?? '—'}<span>/ 100</span></div><p>{snapshot?.healthScore == null ? '等待采集' : snapshot.healthScore >= 80 ? '系统状态良好' : '建议检查状态'}</p></div>
+      <div className={`health-summary ${healthTone}`}><div className="health-ring" style={{ background: `conic-gradient(var(--health-color) ${Math.max(0, Math.min(100, health ?? 0))}%, var(--surface-subtle) 0)` }}><div className="health-number">{health ?? '—'}<small>健康评分</small></div></div><p>{health == null ? '等待采集' : health >= 80 ? <><ShieldCheck size={12} />状态良好</> : <><TriangleAlert size={12} />建议检查</>}</p></div>
     </section>
     <section className="metric-grid" aria-label="实时系统指标">
-      <div className="metric-card"><div className="metric-title"><span><Cpu size={14} /> CPU</span></div><div className="metric-value">{percent(snapshot?.cpu?.usage)}</div><div className="metric-detail">{snapshot?.cpu?.logicalCpu ? `${snapshot.cpu.logicalCpu} 个逻辑核心` : '等待采集'}</div><Sparkline values={cpuTrend} color="#668be8" /></div>
-      <div className="metric-card"><div className="metric-title"><span><MemoryStick size={14} /> 内存</span></div><div className="metric-value">{percent(snapshot?.memory?.usedPercent)}</div><div className="metric-detail">{bytes(snapshot?.memory?.used)} / {bytes(snapshot?.memory?.total)}</div><Sparkline values={memoryTrend} color="#a78add" /></div>
-      <div className="metric-card"><div className="metric-title"><span><Wifi size={14} /> 网络</span></div><div className="network-metric"><ArrowDown size={14} /><strong>{rate(down)}</strong></div><div className="network-upload"><ArrowUp size={12} /> {rate(up)}</div><div className="network-bars" aria-hidden="true">{snapshot?.networkHistory?.rxHistory?.slice(-20).map((value, index, all) => <i key={index} style={{ height: `${Math.max(3, value / Math.max(1, ...all) * 18)}px` }} />)}</div></div>
+      <div className="metric-card cpu-metric"><div className="metric-title"><span><Cpu size={14} /> CPU</span><span className="metric-context">使用率</span></div><div className="metric-value">{percent(snapshot?.cpu?.usage)}</div><div className="metric-detail">{snapshot?.cpu?.logicalCpu ? `${snapshot.cpu.logicalCpu} 个逻辑核心` : '等待采集'}</div><Sparkline values={cpuTrend} color="var(--accent)" /></div>
+      <div className="metric-card memory-metric"><div className="metric-title"><span><MemoryStick size={14} /> 内存</span><span className="metric-context">已使用</span></div><div className="metric-value">{percent(snapshot?.memory?.usedPercent)}</div><div className="metric-detail">{bytes(snapshot?.memory?.used)} / {bytes(snapshot?.memory?.total)}</div><Sparkline values={memoryTrend} color="var(--purple)" /></div>
+      <div className="metric-card"><div className="metric-title"><span><Wifi size={14} /> 网络</span><span className="metric-context">实时速率</span></div><div className="network-metric"><ArrowDown size={14} aria-label="下载" /><strong>{rate(down)}</strong></div><div className="network-upload"><ArrowUp size={12} aria-label="上传" /> {rate(up)}</div><div className="network-bars" aria-hidden="true">{down != null && Number.isFinite(down) && snapshot?.networkHistory?.rxHistory?.slice(-20).filter(Number.isFinite).map((value, index, all) => <i key={index} style={{ height: `${Math.max(3, value / Math.max(1, ...all) * 18)}px` }} />)}</div></div>
     </section>
-    <section className="card storage-card">
+    <section className={`card storage-card ${usage != null && usage >= 90 ? 'storage-low' : ''}`}>
       <div className="section-heading"><h2><HardDrive size={15} /> 存储空间 <small>{disk?.mount === '/System/Volumes/Data' || disk?.mount === '/' ? 'Macintosh HD' : disk?.mount || '本机磁盘'}</small></h2><button className="text-button" onClick={() => navigate('analyze')}>分析磁盘 <ArrowRight size={14} /></button></div>
-      <div className="storage-meter" role="meter" aria-label="磁盘已用空间" aria-valuemin={0} aria-valuemax={100} aria-valuenow={usage} aria-valuetext={usage == null ? '等待采集' : `已使用 ${usage.toFixed(1)}%`}><span style={{ width: `${usage || 0}%` }} /></div>
-      <div className="storage-caption"><span>已使用 {bytes(disk?.used)} / {bytes(disk?.total)}</span><strong>可用 {bytes(free)}</strong></div>
+      <div className="storage-overview"><div><strong>{bytes(free)}</strong><span>可用空间</span></div><span>{usage == null ? '等待磁盘信息' : `已使用 ${usage.toFixed(0)}%`}</span></div>
+      <div className="storage-meter" role="meter" aria-label="磁盘已用空间" aria-valuemin={0} aria-valuemax={100} aria-valuenow={usage} aria-valuetext={usage == null ? '等待采集' : `已使用 ${usage.toFixed(1)}%`}><span style={{ transform: `scaleX(${(usage || 0) / 100})` }} /></div>
+      <div className="storage-caption"><span><i />已使用 {bytes(disk?.used)}</span><span>总容量 {bytes(disk?.total)}</span></div>
     </section>
     <section className="tools-section">
-      <div className="section-heading"><h2>维护工具</h2><span className="subtle-label">选择工具，先预览再执行</span></div>
+      <div className="section-heading"><h2>日常维护</h2><span className="subtle-label"><ShieldCheck size={12} />先检查，再确认</span></div>
       <div className="tool-grid">
         {(['clean', 'uninstall', 'optimize', 'purge', 'installer'] as Operation[]).map(key => {
           const tool = operations[key];
-          return <button className="tool-card" key={key} title={tool.description} onClick={() => navigate(key)}><span className={`tool-icon ${tool.color}`}><tool.icon size={19} strokeWidth={1.7} /></span><span className="tool-card-title">{tool.title}</span></button>;
+          return <button className={`tool-card ${key === 'clean' ? 'featured' : ''}`} key={key} aria-label={tool.title} title={tool.description} onClick={() => navigate(key)}><span className={`tool-icon ${tool.color}`}><tool.icon size={19} strokeWidth={1.7} /></span><span className="tool-card-title">{tool.title}</span><span className="tool-card-description">{toolSummaries[key]}</span><ArrowRight className="tool-card-arrow" size={13} /></button>;
         })}
       </div>
     </section>
@@ -328,6 +355,7 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
   const [filter, setFilter] = useState('');
   useEffect(() => { if (environment?.home) setPath(previous => previous || environment.home); }, [environment?.home]);
   useEffect(() => { if (task?.path) setPath(task.path); }, [task?.id]);
+  useEffect(() => { setFilter(''); }, [task?.path]);
   const report: ScanReport | undefined = task?.result;
   const running = isActive(task);
   const entries = useMemo(() => [...(report?.entries || [])].sort((a, b) => (b.size ?? -1) - (a.size ?? -1)).filter(entry => entry.name.toLowerCase().includes(filter.toLowerCase())), [report, filter]);
@@ -360,11 +388,11 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
     {report ? <section className="card scan-results">
       <div className="section-heading">
         <div><h2>{statusText}</h2><p>{bytes(report.totalSize)} 已测量{report.totalFiles != null ? ` · ${report.totalFiles.toLocaleString()} 个文件` : ''}</p></div>
-        <span className={`state-badge ${report.scanStatus === 'complete' ? 'state-succeeded' : 'state-interrupted'}`}>{report.scanStatus === 'complete' ? <Check size={13} /> : <Info size={13} />} {report.scanStatus}</span>
+        <span className={`state-badge ${report.scanStatus === 'complete' ? 'state-succeeded' : 'state-interrupted'}`}>{report.scanStatus === 'complete' ? <Check size={13} /> : <Info size={13} />} {report.scanStatus === 'complete' ? '完整扫描' : report.scanStatus === 'partial' ? '部分扫描' : '无法读取'}</span>
       </div>
       {report.scanStatus !== 'complete' && <Notice tone="warning">当前容量是已测量的部分。权限限制或扫描中断不代表目录为空；检查权限后可再次分析。</Notice>}
       <div className="disk-breadcrumbs">
-        <button disabled={running} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: '/' })}><HardDrive size={15} /></button>
+        <button aria-label="分析根目录" disabled={running} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: '/' })}><HardDrive size={15} /></button>
         {report.path.split('/').filter(Boolean).map((part, index, all) => <span key={index}><ChevronRight size={13} /><button disabled={running} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: `/${all.slice(0, index + 1).join('/')}` })}>{part}</button></span>)}
       </div>
       <div className="scan-treemap" aria-label="已测量目录容量比例">

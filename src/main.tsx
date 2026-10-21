@@ -4,6 +4,7 @@ import { App } from './App';
 import { mole } from './api';
 import './styles.css';
 import './plugin.css';
+import './interface.css';
 
 const bridge = mole;
 

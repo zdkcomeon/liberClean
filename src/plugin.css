@@ -188,8 +188,11 @@ html, body, #root {
   background: transparent;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .plugin-shell .machine-button:hover {
   background: #f1f4f9;
+}
 }
 
 .plugin-shell .machine-button > span:first-of-type {
@@ -505,7 +508,6 @@ html, body, #root {
   height: 100%;
   background: #91ace2;
   border-radius: inherit;
-  transition: width .3s;
 }
 
 .plugin-shell .storage-caption {
@@ -551,11 +553,14 @@ html, body, #root {
   border-radius: 8px;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .plugin-shell .tool-card:hover {
   border-color: #c9d8f1;
   background: #fbfcff;
   transform: none;
   box-shadow: 0 3px 12px #35456408;
+}
 }
 
 .plugin-shell .tool-icon {
@@ -2224,8 +2229,11 @@ html, body, #root {
   border-bottom: 0;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .plugin-shell .maintenance-row:hover {
   background: #fbfcff;
+}
 }
 
 .plugin-shell .maintenance-row.selected {

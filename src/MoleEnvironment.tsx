@@ -67,12 +67,14 @@ export function MoleUpdatePanel({ environment, update, taskBusy, onUpdate }: {
 export function MoleUpdatePasswordDialog({ update, onUpdate }: { update: MoleUpdate; onUpdate: (update: MoleUpdate) => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const dialog = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
+    const element = dialog.current;
+    element?.showModal();
     input.current?.focus();
-    return () => previous?.focus();
+    return () => { element?.close(); previous?.focus({ preventScroll: true }); };
   }, []);
   useEffect(() => { setPassword(''); setError(''); input.current?.focus(); }, [update.promptToken]);
   function submit(cancel = false) {
@@ -82,19 +84,10 @@ export function MoleUpdatePasswordDialog({ update, onUpdate }: { update: MoleUpd
       setPassword(''); setError('');
     } catch (error) { setPassword(''); setError((error as Error).message); }
   }
-  return <div className="modal-backdrop mole-update-backdrop">
-    <section ref={dialog} className="confirm-dialog mole-update-dialog" role="dialog" aria-modal="true" aria-labelledby="mole-update-auth-title" onKeyDown={event => {
-      if (event.key === 'Escape') { event.preventDefault(); submit(true); }
-      if (event.key === 'Tab') {
-        const elements = [...(dialog.current?.querySelectorAll<HTMLElement>('input, button:not(:disabled)') || [])];
-        const index = elements.indexOf(document.activeElement as HTMLElement);
-        if (event.shiftKey && index <= 0) { event.preventDefault(); elements.at(-1)?.focus(); }
-        else if (!event.shiftKey && index === elements.length - 1) { event.preventDefault(); elements[0]?.focus(); }
-      }
-    }}>
+  return <dialog ref={dialog} className="confirm-dialog mole-update-dialog" aria-labelledby="mole-update-auth-title" aria-describedby="mole-update-auth-description" onCancel={event => { event.preventDefault(); submit(true); }}>
       <div className="confirm-icon"><LockKeyhole size={22} /></div>
       <h2 id="mole-update-auth-title">授权更新 Mole</h2>
-      <p>{update.message}</p>
+      <p id="mole-update-auth-description">{update.message}</p>
       <form onSubmit={event => { event.preventDefault(); submit(); }}>
         <label htmlFor="mole-update-password">Mac 登录密码</label>
         <input ref={input} id="mole-update-password" type="password" autoComplete="off" maxLength={256} value={password} onChange={event => setPassword(event.target.value)} />
@@ -102,6 +95,5 @@ export function MoleUpdatePasswordDialog({ update, onUpdate }: { update: MoleUpd
         <p className="mole-update-auth-note">密码仅用于本次管理员验证，不会保存或写入日志。</p>
         <div className="dialog-actions"><button type="button" className="secondary" onClick={() => submit(true)}>取消更新</button><button className="primary" type="submit" disabled={!password}><LockKeyhole size={14} /> 验证并继续</button></div>
       </form>
-    </section>
-  </div>;
+  </dialog>;
 }

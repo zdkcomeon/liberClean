@@ -1,4 +1,5 @@
 import type { ApplicationInventory, MaintenanceActionRequest, EnterAction, Environment, MoleHistory, MoleUpdate, MoleUpdateAuthorization, StartTaskRequest, StatusState, Task, UninstallActionRequest } from './types';
+import { createPreviewBridge } from './preview';
 
 export interface AttachedTask {
   task: Task;
@@ -25,6 +26,8 @@ export interface MoleBridge {
   detachTask(id: string, listener: (chunk: string) => void): void;
   subscribeTasks(listener: (task: Task) => void): () => void;
   getApplications(refresh?: boolean): Promise<ApplicationInventory>;
+  /** Native system icon for an inventoried app ID; null when unavailable. */
+  getApplicationIcon(id: string): Promise<string | null>;
   getHistory(limit?: number): Promise<MoleHistory>;
   uninstallAction(id: string, action: UninstallActionRequest): Task;
   maintenanceAction(id: string, action: MaintenanceActionRequest): Task;
@@ -45,7 +48,8 @@ declare global {
 }
 
 /** Injected by preload.js before the page runs. */
-export const mole: MoleBridge | undefined = typeof window !== 'undefined' ? window.mole : undefined;
+export const previewMode = import.meta.env.DEV && typeof window !== 'undefined' && !window.mole && new URLSearchParams(window.location.search).has('preview');
+export const mole: MoleBridge | undefined = typeof window !== 'undefined' ? window.mole ?? (previewMode ? createPreviewBridge() : undefined) : undefined;
 
 export const bytes = (value: number | null | undefined, digits = 1): string => {
   if (value == null || !Number.isFinite(value)) return '—';
@@ -54,10 +58,10 @@ export const bytes = (value: number | null | undefined, digits = 1): string => {
   return `${(value / 1024 ** index).toFixed(index ? digits : 0)} ${['B', 'KB', 'MB', 'GB', 'TB'][index]}`;
 };
 
-export const percent = (value?: number | null) => value == null ? '—' : `${value.toFixed(1)}%`;
+export const percent = (value?: number | null) => value == null || !Number.isFinite(value) ? '—' : `${value.toFixed(1)}%`;
 
 /** Mole rates are MiB/s; convert before formatting the displayed byte rate. */
-export const rate = (value?: number | null) => value == null ? '暂不可用' : `${bytes(value * 1024 ** 2)}/s`;
+export const rate = (value?: number | null) => value == null || !Number.isFinite(value) ? '暂不可用' : `${bytes(value * 1024 ** 2)}/s`;
 
 export const dateTime = (value?: string | null) => {
   if (!value) return '—';

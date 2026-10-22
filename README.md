@@ -4,7 +4,9 @@
 
 LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools 插件，为 macOS 提供系统状态查看、磁盘分析、应用卸载和日常维护的图形界面。
 
-界面按插件小窗口设计，默认内容高度为 560 像素，主要功能通过顶部导航切换，操作记录和环境设置位于右上角。系统概览集中展示设备、实时指标和存储空间，更多硬件信息可在设备卡片中展开。实际维护由本机安装的 Mole 执行，支持先检查、再选择和确认操作。
+[最新版本 v0.2.0](https://github.com/zdkcomeon/liberClean/releases/tag/v0.2.0) · [发布说明](./docs/releases/v0.2.0.md) · [下载已构建的插件目录](https://github.com/zdkcomeon/liberClean/releases/download/v0.2.0/LiberClean-v0.2.0-dist.zip)
+
+界面采用蓝白配色和深色文字，按插件小窗口设计，默认内容高度为 560 像素。主要功能通过顶部导航切换，操作记录和环境设置位于右上角。系统概览集中展示设备、实时指标和存储空间，更多硬件信息可在设备卡片中展开。实际维护由本机安装的 Mole 执行，支持先检查、再选择和确认操作。
 
 ## 功能
 
@@ -21,6 +23,25 @@ LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools
 | 环境设置 | 自动检测或手动指定 mo 路径，查看版本、打开日志和更新 Mole |
 
 每次打开插件都会重新检查 Mole 安装状态。未检测到可用命令时，界面会提供安装说明、重新检测和手动选择路径入口。
+
+## 功能截图
+
+以下截图使用预览模式的示例数据。实际设备、文件清单和应用图标以本机检查结果为准。
+
+<table>
+  <tr>
+    <td width="50%"><strong>系统概览</strong><p>查看设备、健康评分、实时指标和磁盘空间。</p><img src="./docs/images/overview.jpg" alt="系统概览：设备信息、CPU、内存、网络和存储空间" width="400" /></td>
+    <td width="50%"><strong>磁盘分析</strong><p>查看目录占用，按目录逐层浏览。</p><img src="./docs/images/disk-analysis.jpg" alt="磁盘分析：目录占用图和文件清单" width="400" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><strong>检查与维护</strong><p>先检查清理范围，查看清单后再确认。</p><img src="./docs/images/maintenance.jpg" alt="深度清理：检查结果、文件与目录清单以及确认入口" width="400" /></td>
+    <td width="50%"><strong>应用卸载</strong><p>搜索和选择应用，检查关联文件后卸载。</p><img src="./docs/images/uninstall.jpg" alt="应用卸载：应用搜索、选择和关联文件检查入口" width="400" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><strong>安装包清理</strong><p>搜索、筛选并勾选需要处理的安装包。</p><img src="./docs/images/installer.jpg" alt="安装包清理：检查结果、文件选择和确认入口" width="400" /></td>
+    <td width="50%"><strong>环境设置</strong><p>检测 Mole 路径与版本，查看日志和更新入口。</p><img src="./docs/images/settings.jpg" alt="环境设置：Mole 安装信息、路径检测和更新入口" width="400" /></td>
+  </tr>
+</table>
 
 ## 使用条件
 
@@ -42,7 +63,17 @@ mo --version
 
 插件会查找系统 PATH、Homebrew 常见目录、`~/.local/bin/mo` 和 `~/bin/mo`。安装在其他位置时，可在环境设置中选择 mo 可执行文件。
 
-## 从源码安装插件
+## 安装与升级
+
+### 使用发布的构建目录
+
+1. 在 [Releases](https://github.com/zdkcomeon/liberClean/releases/latest) 下载 `LiberClean-v0.2.0-dist.zip` 并解压。
+2. 在 uTools 开发者工具中导入解压后的 `dist/plugin.json`，按提示安装并打开。
+3. 升级后结束插件进程并重新打开，以加载新版界面和本地脚本。
+
+ZIP 附件包含已构建的插件目录，不需要安装 Node.js 或自行构建；需要 `.upx` 离线安装包时，可按下方的打包分发步骤通过 uTools 开发者工具生成。
+
+### 从源码安装插件
 
 ```bash
 git clone https://github.com/zdkcomeon/liberClean.git
@@ -78,6 +109,8 @@ pnpm build
 ### 检查与维护
 
 进入维护页面后先检查当前范围。项目清理和安装包清理支持搜索、筛选与勾选文件，执行前会重新核对所选内容；深度清理和系统优化按 Mole 的规则整批处理。应用卸载会展示关联文件和将保留的项目，确认后才继续卸载。
+
+深度清理、系统优化、项目清理和安装包清理首次进入时，开始检查按钮位于页面中央。已有任务后，重新检查入口位于页面顶部，便于刷新检查结果。
 
 应用图标由 uTools 根据 Mole 扫描到的 `.app` 安装路径读取，列表、检查结果和确认窗口保持一致。图标按需加载并缓存，刷新应用列表时重新读取；读取失败时显示通用应用图标。普通浏览器预览没有原生接口，使用相同的通用图标。
 

@@ -24,11 +24,10 @@ export function MoleInstallationPrompt({ environment, onRefresh, onEnvironment }
     <div className="mole-install-icon"><Download size={23} /></div>
     <div className="mole-install-body">
       <h2>{missing ? '尚未安装 Mole' : '未检测到可用的 Mole'}</h2>
-      <p>{missing ? '插件需要本机 Mole 才能运行。请先安装，再回到这里重新检测。' : environment.error || '请检查 Mole 的安装与命令路径。'}</p>
+      <p>{missing ? '安装 Mole 后即可开始。' : environment.error || '请检查安装与命令路径。'}</p>
       <div className="mole-install-command"><span>通过 Homebrew 安装</span><code>brew install mole</code></div>
-      <p className="mole-install-help">也可按官方说明使用脚本安装。已安装到其他目录时，可以手动选择 mo 文件。</p>
       <div className="mole-environment-actions">
-        <button className="primary" onClick={() => void check()} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} /> {busy ? '正在检测…' : '我已安装，重新检测'}</button>
+        <button className="primary" onClick={() => void check()} disabled={busy}><RefreshCw size={14} className={busy ? 'spin' : ''} /> {busy ? '正在检测…' : '重新检测'}</button>
         <button className="secondary" onClick={() => mole?.openExternal('https://github.com/tw93/Mole#quick-start')}><ExternalLink size={14} /> 安装说明</button>
         <button className="secondary" onClick={() => void check(true)} disabled={busy}><Folder size={14} /> 选择 mo 路径</button>
       </div>
@@ -48,13 +47,13 @@ export function MoleUpdatePanel({ environment, update, taskBusy, onUpdate }: {
   const succeeded = update?.phase === 'succeeded';
   return <section className={`card mole-update-panel ${failed ? 'failed' : succeeded ? 'succeeded' : ''}`} aria-label="Mole 更新">
     <div className="mole-update-heading">
-      <div className="mole-update-title"><span className="mole-update-icon">{updating ? <Loader2 size={20} className="spin" /> : succeeded ? <Check size={20} /> : <Download size={20} />}</span><div><h2>Mole 更新</h2><p>当前版本 {environment?.moVersion || '未检测到'} · 更新至最新稳定版</p></div></div>
+      <div className="mole-update-title"><span className="mole-update-icon">{updating ? <Loader2 size={20} className="spin" /> : succeeded ? <Check size={20} /> : <Download size={20} />}</span><div><h2>Mole 更新</h2><p>版本 {environment?.moVersion || '未检测到'}</p></div></div>
       <button className="primary" onClick={onUpdate} disabled={!environment?.ready || taskBusy || updating || !mole?.updateMole}><RefreshCw size={14} className={updating ? 'spin' : ''} /> {updating ? '正在更新…' : failed ? '重试更新' : '更新 Mole'}</button>
     </div>
-    <div className="mole-update-status" role="status" aria-live="polite">
+    {update?.message && <div className="mole-update-status" role="status" aria-live="polite">
       {failed && <TriangleAlert size={15} />}
-      <span>{update?.message || '点击后自动检查并更新，Homebrew 与脚本安装均可使用。'}</span>
-    </div>
+      <span>{update.message}</span>
+    </div>}
     {update?.detail && <p className="mole-update-detail">{update.detail}</p>}
     {updating && <div className="mole-update-progress" role="progressbar" aria-label="Mole 更新进行中"><span /></div>}
     {taskBusy && !updating && <p className="mole-update-detail">请等待当前维护任务完成后再更新。</p>}

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ArrowDown, ArrowRight, ArrowUp, Battery, Boxes, Check, ChevronDown, ChevronRight,
-  CircleHelp, Clock3, Code2, Command, Cpu, Download, ExternalLink, File, Folder, HardDrive, History, Info,
-  LayoutDashboard, Loader2, LockKeyhole, MemoryStick, Monitor, RefreshCw, Search, Settings2, ShieldCheck,
+  ArrowDown, ArrowRight, ArrowUp, Battery, Boxes, ChevronDown, ChevronRight,
+  CircleHelp, Clock3, Code2, Cpu, Download, ExternalLink, File, Folder, HardDrive, History, Info,
+  LayoutDashboard, Loader2, MemoryStick, Monitor, RefreshCw, Search, Settings2, ShieldCheck,
   Sparkles, Terminal as TerminalIcon, Trash2, TriangleAlert, WandSparkles, Wifi, X, type LucideIcon
 } from 'lucide-react';
 import { bytes, dateTime, duration, mole, percent, previewMode, rate, shortPath, type MoleBridge } from './api';
@@ -206,7 +206,7 @@ export function App() {
           <a className="brand" href="#overview" aria-label="LiberClean 系统概览" onClick={event => { event.preventDefault(); navigate('overview'); }}>
             <div className="brand-mark"><img src={logoUrl} alt="" /></div><span>LiberClean</span>
           </a>
-          <span className={`header-caption ${previewMode ? 'preview-label' : ''}`}>{previewMode ? <><span className="preview-label-full">预览模式 · </span>示例数据</> : '让 Mac 保持轻盈'}</span>
+          {previewMode && <span className="header-caption preview-label">示例数据</span>}
         </div>
         <div className="topbar-right">
           <button className="machine-button" title={snapshot?.host || '查看本机环境设置'} onClick={() => navigate('settings')}>
@@ -236,8 +236,8 @@ export function App() {
         {page === 'settings' && <SettingsPage environment={environment} environmentError={environmentError} onRefresh={refreshEnvironment} onEnvironment={setEnvironment} update={moleUpdate} taskBusy={!!active} onUpdate={updateMole} />}
       </main>
       <footer className="page-footer">
-        <span><span className={`connection-dot ${status.state === 'live' ? 'online' : ''}`} />{status.state === 'live' ? '本机数据已连接' : status.state === 'starting' ? '正在读取系统状态' : '系统状态暂不可用'}<a className="footer-version" href="https://github.com/tw93/Mole" target="_blank" rel="noreferrer" title="Mole 开源项目">Mole {environment?.moVersion || '—'}<ExternalLink size={10} /></a></span>
-        <span>{previewMode ? '示例操作不会修改本机文件' : updating ? 'Mole 更新中，请等待完成' : active ? `${operations[active.operation].title}正在运行` : '本机处理 · 确认后执行'}</span>
+        <span title="本机系统状态"><span className={`connection-dot ${status.state === 'live' ? 'online' : ''}`} />{status.state === 'live' ? '已连接' : status.state === 'starting' ? '正在连接' : '连接中断'}<a className="footer-version" href="https://github.com/tw93/Mole" target="_blank" rel="noreferrer" title="Mole 开源项目">Mole {environment?.moVersion || '—'}<ExternalLink size={10} /></a></span>
+        {(updating || active) && <span>{updating ? 'Mole 更新中' : active && `${operations[active.operation].title}正在运行`}</span>}
       </footer>
     </div>
     {moleUpdate?.phase === 'authorizing' && <MoleUpdatePasswordDialog update={moleUpdate} onUpdate={setMoleUpdate} />}
@@ -262,8 +262,8 @@ function Notice({ children, tone = 'info' }: { children: ReactNode; tone?: 'info
   return <div className={`notice ${tone}`} role="status">{tone === 'warning' ? <TriangleAlert size={17} /> : <Info size={17} />}<div>{children}</div></div>;
 }
 
-function PageTitle({ title, subtitle, children }: { title: string; subtitle: string; children?: ReactNode }) {
-  return <div className="page-heading"><div><h1>{title}</h1><p>{subtitle}</p></div>{children}</div>;
+function PageTitle({ title, children }: { title: string; children?: ReactNode }) {
+  return <div className="page-heading"><h1>{title}</h1>{children}</div>;
 }
 
 function StateBadge({ task }: { task: Task }) {
@@ -351,7 +351,7 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
   const statusText = report?.scanStatus === 'complete' ? '扫描完成' : report?.scanStatus === 'partial' ? '部分目录未能完整扫描' : '无法读取目录';
 
   return <div className="analyze-page list-workspace">
-    <PageTitle title="磁盘分析" subtitle="选择目录开始扫描，点击文件夹继续分析。" />
+    <PageTitle title="磁盘分析" />
     <section className="card scan-controls">
       <label className="sr-only" htmlFor="scan-path">分析目录</label>
       <form onSubmit={event => { event.preventDefault(); onStart({ operation: 'analyze', mode: 'scan', path }); }}>
@@ -360,24 +360,22 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
           <option value="" disabled>常用目录</option>
           {[{ label: '主目录', path: environment?.home }, { label: '下载', path: environment?.home && `${environment.home}/Downloads` }, { label: '应用程序', path: '/Applications' }, { label: '外接磁盘', path: '/Volumes' }].map(item => <option key={item.label} value={item.path || ''} disabled={!item.path}>{item.label}</option>)}
         </select>
-        <button type="button" className="secondary" onClick={() => { const picked = mole?.pickDirectory(); if (picked) setPath(picked); }}><Folder size={15} /> 选择</button>
+        <button type="button" className="secondary" onClick={() => { const picked = mole?.pickDirectory(); if (picked) setPath(picked); }}><Folder size={15} /> 选择目录</button>
         <button className="primary" disabled={busy || running || !path || !environment?.ready}>{running ? <Loader2 size={16} className="spin" /> : <Search size={16} />} 开始分析</button>
       </form>
     </section>
 
-    {task && (!report || running || task.error) && <div className="task-summary">
+    {task && (!report || running || task.error) && <div className="task-summary" title={`任务 ${task.id}${task.exitCode != null ? ` · 退出码 ${task.exitCode}` : ''}`}>
       <div className="task-summary-heading">
         <div><StateBadge task={task} /><span className="task-mode">只读分析</span><span className="task-elapsed"><Clock3 size={13} />{duration(task, now)}</span></div>
         {running && <button className="text-button danger-text" onClick={() => onStop(task)} disabled={task.state === 'cancelling'}>停止分析</button>}
       </div>
       {task.error && <p className={task.state === 'failed' ? 'task-error' : ''}>{task.error}</p>}
-      <div className="task-id"><span>任务 {task.id.slice(0, 8)}</span>{task.exitCode != null && <span>退出码 {task.exitCode}</span>}</div>
     </div>}
 
     {report ? <section className="card scan-results">
       <div className="section-heading">
-        <div><h2>{statusText}</h2><p>{bytes(report.totalSize)} 已测量{report.totalFiles != null ? ` · ${report.totalFiles.toLocaleString()} 个文件` : ''}</p></div>
-        <span className={`state-badge ${report.scanStatus === 'complete' ? 'state-succeeded' : 'state-interrupted'}`}>{report.scanStatus === 'complete' ? <Check size={13} /> : <Info size={13} />} {report.scanStatus === 'complete' ? '完整扫描' : report.scanStatus === 'partial' ? '部分扫描' : '无法读取'}</span>
+        <div><h2>{statusText}</h2><p>{bytes(report.totalSize)}{report.totalFiles != null ? ` · ${report.totalFiles.toLocaleString()} 个文件` : ''}</p></div>
       </div>
       {report.scanStatus !== 'complete' && <Notice tone="warning">当前容量是已测量的部分。权限限制或扫描中断不代表目录为空；检查权限后可再次分析。</Notice>}
       <div className="disk-breadcrumbs">
@@ -402,10 +400,8 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
         {!!report.largeFiles?.length && <details className="large-files" onToggle={event => { if (event.currentTarget.open) event.currentTarget.scrollIntoView({ block: 'nearest' }); }}><summary>大文件 · {report.largeFiles.length} 项 <ChevronDown size={13} /></summary><div className="large-file-list">{report.largeFiles.slice(0, 20).map(file => <div key={file.path}><span title={file.path}><File size={15} />{file.name}</span><strong>{bytes(file.size)}</strong></div>)}</div></details>}
       </div>
     </section> : !running && <div className="empty-state scan-empty">
-      <div className="scan-empty-art"><HardDrive size={38} /><span><Search size={17} /></span></div>
-      <h2>选择一个目录开始分析</h2>
-      <p>选择目录并开始分析，结果会以容量分布和文件列表展示。</p>
-      <div className="empty-feature-row"><span><ShieldCheck size={14} /> 只读扫描</span><span><Folder size={14} /> 逐层探索</span><span><LockKeyhole size={14} /> 本机处理</span></div>
+      <div className="scan-empty-art"><HardDrive size={38} /></div>
+      <h2>选择要分析的文件夹</h2>
     </div>}
   </div>;
 }
@@ -429,7 +425,7 @@ function HistoryPage() {
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <div className="history-page list-workspace">
-    <PageTitle title="操作记录" subtitle="查看 Mole 保存在本机的命令与删除记录。">
+    <PageTitle title="操作记录">
       <div className="history-actions">
         <div className="segmented">
           <button className={tab === 'sessions' ? 'selected' : ''} onClick={() => setTab('sessions')}><TerminalIcon size={14} /> 命令记录 <span>{history?.sessions.length ?? 0}</span></button>
@@ -445,11 +441,11 @@ function HistoryPage() {
         : tab === 'sessions' ? (history?.sessions.length ? <>
           <div className="history-row history-head"><span>命令</span><span>开始时间</span><span>记录信息</span><span /></div>
           {history.sessions.map((session, index) => <div className="history-row" key={`${session.runId || 'session'}-${index}`}>
-            <span><span className="small-tool-icon blue"><TerminalIcon size={17} /></span><span><strong>mo {session.command || 'unknown'}</strong><small>{session.runId || '未记录运行标识'}</small></span></span>
+            <span><span className="small-tool-icon blue"><TerminalIcon size={17} /></span><span><strong title={session.runId}>mo {session.command || 'unknown'}</strong></span></span>
             <span>{session.startedAt || '—'}</span>
-            <span>{session.items ?? 0} 项 · {session.size || '未记录大小'}<small>{session.failedTasks ? `${session.failedTasks} 个步骤失败` : '没有记录失败步骤'}</small></span>
+            <span>{session.items ?? 0} 项 · {session.size || '大小未知'}{!!session.failedTasks && <small>{session.failedTasks} 个步骤失败</small>}</span>
             <span />
-          </div>)}</> : <div className="empty-state"><History size={30} /><h2>暂无命令记录</h2><p>执行一次清理、优化或卸载后，Mole 会在这里留下记录。</p></div>)
+          </div>)}</> : <div className="empty-state"><History size={30} /><h2>暂无命令记录</h2></div>)
         : (history?.deletions.length ? <>
           <div className="history-row history-head"><span>时间</span><span>模式</span><span>结果</span><span /></div>
           {history.deletions.map((item, index) => <div className="history-row" key={`${item.timestamp || 'deletion'}-${index}`}>
@@ -457,7 +453,7 @@ function HistoryPage() {
             <span>{item.mode || '—'}</span>
             <span>{item.status || '—'}<small>{item.sizeKb == null ? '大小未知' : bytes(item.sizeKb * 1024)}</small></span>
             <span />
-          </div>)}</> : <div className="empty-state"><Trash2 size={30} /><h2>暂无删除记录</h2><p>Mole 会把实际删除的文件记录在本地日志中。</p></div>)}
+          </div>)}</> : <div className="empty-state"><Trash2 size={30} /><h2>暂无删除记录</h2></div>)}
       </div>
     </section>
   </div>;
@@ -496,7 +492,7 @@ function SettingsPage({ environment, environmentError, onRefresh, onEnvironment,
   }
 
   return <>
-    <PageTitle title="Mole 运行环境" subtitle="管理本机命令路径、查看版本与运行日志。">
+    <PageTitle title="环境设置">
       <button className="secondary" onClick={() => void refresh()} disabled={busy || updating}><RefreshCw size={15} className={busy ? 'spin' : ''} /> 刷新信息</button>
     </PageTitle>
     {environmentError && <Notice tone="warning">{environmentError}</Notice>}
@@ -519,12 +515,9 @@ function SettingsPage({ environment, environmentError, onRefresh, onEnvironment,
         <button className="secondary compact" onClick={() => mole?.openLog()}><File size={14} /> 打开日志</button>
       </div>
     </section>
-    <div className="settings-grid">
-      <section className="card"><div className="settings-icon"><LockKeyhole size={22} /></div><h3>只在本机运行</h3><p>插件调用本机 Mole 完成分析和维护，文件信息与运行记录保存在本机。</p></section>
-      <section className="card"><div className="settings-icon"><Folder size={22} /></div><h3>文件访问权限</h3><p>部分目录需要 macOS 授权。若扫描结果不完整，请在系统设置的隐私与安全性中为 uTools 授予必要权限。</p></section>
-      <section className="card"><div className="settings-icon"><Command size={22} /></div><h3>图形操作</h3><p>先检查维护范围，再勾选项目并确认。需要管理员权限时，在页面中输入 Mac 登录密码，也可以跳过需要管理员权限的步骤。</p></section>
-      <section className="card"><div className="settings-icon"><CircleHelp size={22} /></div><h3>关于 LiberClean</h3><p>LiberClean 通过图形界面管理本机维护操作，清理规则、文件保护和管理员授权由已安装的 Mole 执行。</p><a href="https://github.com/zdkcomeon/liberClean" target="_blank" rel="noreferrer">项目主页 <ExternalLink size={13} /></a></section>
-    </div>
-    <div className="empty-feature-row settings-footnote"><span><Monitor size={14} /> uTools {environment?.platform === 'darwin' ? 'macOS' : environment?.platform || ''}</span><span><ShieldCheck size={14} /> 本机会话</span><span><Clock3 size={14} /> 打开时检测安装状态</span></div>
+    <details className="card settings-help">
+      <summary><CircleHelp size={16} />帮助与关于<ChevronDown size={14} /></summary>
+      <div><h3>文件访问权限</h3><p>扫描不完整时，可在系统设置 → 隐私与安全性中检查 uTools 的文件访问权限。</p><h3>关于 LiberClean</h3><p>分析和维护由本机 Mole 执行，文件信息与记录保存在本机。</p><a href="https://github.com/zdkcomeon/liberClean" target="_blank" rel="noreferrer">项目主页 <ExternalLink size={13} /></a></div>
+    </details>
   </>;
 }

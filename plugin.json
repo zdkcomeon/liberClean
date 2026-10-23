@@ -9,7 +9,7 @@
   "preload": "preload.js",
   "pluginSetting": {
     "single": true,
-    "height": 560
+    "height": 544
   },
   "development": {
     "main": "http://127.0.0.1:5174"

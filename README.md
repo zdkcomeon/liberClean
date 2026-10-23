@@ -6,7 +6,7 @@ LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools
 
 [最新版本 v0.2.0](https://github.com/zdkcomeon/liberClean/releases/tag/v0.2.0) · [发布说明](./docs/releases/v0.2.0.md) · [下载已构建的插件目录](https://github.com/zdkcomeon/liberClean/releases/download/v0.2.0/LiberClean-v0.2.0-dist.zip)
 
-界面采用蓝白配色和深色文字，按插件小窗口设计，默认内容高度为 560 像素。主要功能通过顶部导航切换，操作记录和环境设置位于右上角。系统概览集中展示设备、实时指标和存储空间，更多硬件信息可在设备卡片中展开。实际维护由本机安装的 Mole 执行，支持先检查、再选择和确认操作。
+界面采用蓝白配色和深色文字，按插件小窗口设计，默认内容高度为 544 DIP，加上 uTools 顶部输入栏后，标准窗口总高度约为 600 DIP。主要功能通过顶部导航切换，操作记录和环境设置位于右上角。系统概览集中展示设备、实时指标和存储空间，更多硬件信息可在设备卡片中展开。实际维护由本机安装的 Mole 执行，支持先检查、再选择和确认操作。
 
 ## 功能
 
@@ -132,6 +132,8 @@ pnpm dev
 ```
 
 开发服务器固定使用 `http://127.0.0.1:5174`。在 uTools 开发者工具中导入仓库根目录的 `plugin.json`，其 `development.main` 会连接该地址。
+
+插件内容高度统一在 `plugin.json` 的 `pluginSetting.height` 中配置。每次进入插件时，`preload.js` 都会按该配置调用 `utools.setExpandHeight`，并兼容旧版 `utools.setExpendHeight`，避免后台驻留后沿用旧高度。页面随窗口高度布局，较长内容在主体区域内滚动。修改高度后需重新构建并重载插件；普通浏览器预览只随浏览器视口调整。
 
 在普通浏览器中打开 [UI 预览](http://127.0.0.1:5174/?preview=1)，可以用示例数据检查布局、搜索筛选、文件选择和确认弹窗。底部可以切换正常、边界、空列表、单项、千项、未安装和部分扫描数据。`preview=stress` 包含长名称、Emoji、不可选择项目、未知大小和异常指标；`preview=many` 用于检查千项列表；`preview=authorization#settings` 用于检查权限窗口。预览模式不会读取或修改本机文件，也不会调用 Mole；示例桥接仅在开发模式且不存在 uTools 桥接时启用，生产构建会移除示例数据。
 

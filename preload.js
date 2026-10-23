@@ -18,6 +18,7 @@ const path = require('node:path');
 const readline = require('node:readline');
 const { createMaintenanceController, MAINTENANCE_OPERATIONS } = require('./maintenance.js');
 const { createMoleUpdater } = require('./mole-update.js');
+const { pluginSetting } = require('./plugin.json');
 
 const HOME = os.homedir();
 const LOG_FILE = path.join(HOME, 'Library', 'Logs', 'mo-utools', 'plugin.log');
@@ -1371,6 +1372,14 @@ if (typeof utools !== 'undefined' && utools) {
     utools.onPluginEnter(action => {
       pluginVisible = true;
       enterAction = action;
+      const started = Date.now();
+      const heightMethod = typeof utools.setExpandHeight === 'function' ? 'setExpandHeight' : 'setExpendHeight';
+      try {
+        const applied = typeof utools[heightMethod] === 'function' && utools[heightMethod](pluginSetting.height);
+        logEvent('plugin.window_height_set', { feature: action.code, target: `utools.${heightMethod}`, height: pluginSetting.height, applied, elapsedMs: Date.now() - started });
+      } catch (error) {
+        logEvent('plugin.window_height_failed', { feature: action.code, target: `utools.${heightMethod}`, height: pluginSetting.height, elapsedMs: Date.now() - started, message: cleanMessage(error.message) });
+      }
       for (const listener of enterListeners) safeCall(listener, action);
       if (statusListeners.size) {
         refreshEnvironment().then(environment => {

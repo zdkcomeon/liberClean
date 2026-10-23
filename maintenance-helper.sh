@@ -104,6 +104,13 @@ gui_request_sudo() {
     done
 }
 
+# Read the outcomes already recorded by Mole, without changing task execution.
+gui_optimize_result() {
+    local action="$1" outcome="$2" title="$1"
+    if declare -F optimize_catalog_health_name_for > /dev/null; then title=$(optimize_catalog_health_name_for "$action"); fi
+    gui_emit optimize_result "$action" "$title" "$outcome"
+}
+
 gui_emit hello '1' "$gui_operation" "$gui_mode"
 
 case "$gui_operation" in
@@ -128,6 +135,17 @@ case "$gui_operation" in
     optimize)
         # The native script runs main when sourced; its first pass is always read-only.
         source "$native_script" --dry-run
+        if declare -F optimize_task_finish > /dev/null && declare -p MOLE_OPTIMIZE_RESULT_ACTIONS MOLE_OPTIMIZE_RESULT_OUTCOMES > /dev/null 2>&1; then
+            for ((gui_i = 0; gui_i < ${#MOLE_OPTIMIZE_RESULT_ACTIONS[@]}; gui_i++)); do
+                gui_optimize_result "${MOLE_OPTIMIZE_RESULT_ACTIONS[gui_i]}" "${MOLE_OPTIMIZE_RESULT_OUTCOMES[gui_i]}"
+            done
+            eval "$(declare -f optimize_task_finish | sed '1s/optimize_task_finish/gui_native_optimize_task_finish/')"
+            optimize_task_finish() {
+                local gui_action="$1" gui_outcome="$MOLE_OPTIMIZE_TASK_OUTCOME"
+                gui_native_optimize_task_finish "$@" || return $?
+                gui_optimize_result "$gui_action" "$gui_outcome"
+            }
+        fi
         if [[ "$gui_mode" == execute ]]; then
             declare -F request_sudo_access_with_password > /dev/null
             request_sudo_access() { gui_request_sudo; }
@@ -145,7 +163,15 @@ case "$gui_operation" in
         for gui_function in collect_installers mole_deletion_identity build_installer_delete_plan execute_installer_delete_plan; do
             declare -F "$gui_function" > /dev/null || exit 65
         done
-        collect_installers
+        gui_scan_rc=0
+        collect_installers || gui_scan_rc=$?
+        if [[ "$gui_scan_rc" -eq 1 && ${#INSTALLER_PATHS[@]} -eq 0 ]]; then
+            gui_emit inventory '0' complete
+            exit 0
+        elif [[ "$gui_scan_rc" -ne 0 ]]; then
+            gui_emit failure installer_scan "$gui_scan_rc" "${INSTALLER_SCAN_FAILURE_PATH:-}"
+            exit "$gui_scan_rc"
+        fi
         gui_count=${#INSTALLER_PATHS[@]}
         GUI_IDENTITIES=()
         for ((gui_i = 0; gui_i < gui_count; gui_i++)); do

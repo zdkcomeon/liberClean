@@ -10,6 +10,13 @@ const { createMaintenanceController } = require('../maintenance.js');
 const installerFixture = `#!/bin/bash
 MOLE_CURRENT_COMMAND=installer
 collect_installers() {
+  if [[ "\${MOLE_GUI_FIXTURE_SCAN_STATUS:-0}" != 0 ]]; then
+    INSTALLER_PATHS=(); INSTALLER_SIZES=(); INSTALLER_SOURCES=()
+    if [[ "$MOLE_GUI_FIXTURE_SCAN_STATUS" == 1 ]]; then echo '✓ Great! No installer files to clean'; return 1; fi
+    INSTALLER_SCAN_FAILURE_PATH="$MOLE_GUI_FIXTURE_DIR/restricted"
+    echo "find: $INSTALLER_SCAN_FAILURE_PATH: Permission denied" >&2
+    return "$MOLE_GUI_FIXTURE_SCAN_STATUS"
+  fi
   INSTALLER_PATHS=("$MOLE_GUI_FIXTURE_DIR/a \\\"β\\\" \\\\ sample.dmg" "$MOLE_GUI_FIXTURE_DIR/keep.dmg")
   INSTALLER_SIZES=(4 4)
   INSTALLER_SOURCES=(Downloads Downloads)
@@ -84,22 +91,36 @@ if [[ "\${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi
 const optimizeFixture = `#!/bin/bash
 request_sudo_access_with_password() { [[ "$1" == fixture-password ]]; }
 show_optimization_summary() { :; }
+MOLE_OPTIMIZE_RESULT_ACTIONS=(); MOLE_OPTIMIZE_RESULT_OUTCOMES=()
+MOLE_OPTIMIZE_TASK_OUTCOME=applied
+optimize_catalog_health_name_for() { echo 'Finder Cache Refresh'; }
+optimize_task_finish() {
+  MOLE_OPTIMIZE_RESULT_ACTIONS+=("$1")
+  MOLE_OPTIMIZE_RESULT_OUTCOMES+=("$MOLE_OPTIMIZE_TASK_OUTCOME")
+  MOLE_OPTIMIZE_TASK_OUTCOME=''
+}
 main() {
+  MOLE_OPTIMIZE_RESULT_ACTIONS=(); MOLE_OPTIMIZE_RESULT_OUTCOMES=()
+  MOLE_OPTIMIZE_TASK_OUTCOME=applied
   if [[ "\${1:-}" == --dry-run ]]; then
     export MOLE_DRY_RUN=1
-    echo '➤ Finder Cache Refresh'; echo '✓ Would refresh Finder'; echo 'Dry Run Complete, No Changes Made'
+    echo '➤ Finder Cache Refresh'; echo '✓ Would refresh Finder'
+    optimize_task_finish finder_refresh
+    echo 'Dry Run Complete, No Changes Made'
   else
     [[ "\${MOLE_DRY_RUN:-0}" != 1 ]] || return 1
     request_sudo_access
     printf complete > "$MOLE_GUI_FIXTURE_DIR/batch-completed"
-    echo '➤ Finder Cache Refresh'; echo '✓ Refreshed Finder'; echo 'Optimization Complete'
+    echo '➤ Finder Cache Refresh'; echo '✓ Refreshed Finder'
+    optimize_task_finish finder_refresh
+    echo 'Optimization Complete'
   fi
 }
 main "$@"
 `;
 
-for (const operation of ['installer', 'purge', 'clean', 'optimize']) {
-  test(`native helper ${operation}: preview, explicit confirmation and selected execution`, { skip: process.platform !== 'darwin', timeout: 20000 }, async t => {
+for (const [operation, scanStatus] of [['installer', 0], ['purge', 0], ['clean', 0], ['optimize', 0], ['installer', 1], ['installer', 4]]) {
+  test(`native helper ${operation}: ${scanStatus ? `scan status ${scanStatus}` : 'preview, explicit confirmation and selected execution'}`, { skip: process.platform !== 'darwin', timeout: 20000 }, async t => {
     const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'mole-helper-integration-')));
     fs.mkdirSync(path.join(root, 'bin')); fs.mkdirSync(path.join(root, 'lib', 'clean'), { recursive: true });
     fs.writeFileSync(path.join(root, 'mo'), '# fixture');
@@ -110,7 +131,7 @@ for (const operation of ['installer', 'purge', 'clean', 'optimize']) {
     const tasks = new Map(), runtimes = new Map(), logs = [], output = [], waiters = [];
     const notify = () => { for (const resolve of waiters.splice(0)) resolve(); };
     const killGroup = child => { try { process.kill(-child.pid, 'SIGTERM'); } catch {} };
-    const controller = createMaintenanceController({ tasks, runtimes, getEnvironment: () => ({ moPath: path.join(root, 'mo'), moVersion: 'fixture' }), childEnv: extra => ({ ...process.env, ...extra, MOLE_GUI_FIXTURE_DIR: root }), killGroup, logEvent: (event, fields) => logs.push({ event, ...fields }), emitTask: notify,
+    const controller = createMaintenanceController({ tasks, runtimes, getEnvironment: () => ({ moPath: path.join(root, 'mo'), moVersion: 'fixture' }), childEnv: extra => ({ ...process.env, ...extra, MOLE_GUI_FIXTURE_DIR: root, MOLE_GUI_FIXTURE_SCAN_STATUS: String(scanStatus) }), killGroup, logEvent: (event, fields) => logs.push({ event, ...fields }), emitTask: notify,
       spawnProcess(...args) { const child = spawn(...args); child.stdout.on('data', chunk => output.push(String(chunk))); return child; },
       finishTask(task, runtime, code, signal, failure) { runtime.finished = true; clearTimeout(runtime.killTimer); task.state = runtime.cancelRequested ? 'cancelled' : failure || code !== 0 ? 'failed' : 'succeeded'; task.error = failure; runtimes.delete(task.id); notify(); }
     });
@@ -130,6 +151,16 @@ for (const operation of ['installer', 'purge', 'clean', 'optimize']) {
     }
     const preview = start('preview');
     await until(() => preview.state !== 'running', preview);
+    if (scanStatus) {
+      assert.equal(preview.maintenance.phase, scanStatus === 1 ? 'reviewed' : 'failed', output.join(''));
+      assert.equal(preview.maintenance.items.length, 0);
+      if (scanStatus === 4) {
+        assert.match(preview.maintenance.message, /安装包扫描失败.*restricted/);
+        assert(preview.maintenance.messages.some(message => message.text.includes('Permission denied')));
+      }
+      assert(fs.existsSync(first)); assert(fs.existsSync(keep));
+      return;
+    }
     assert.equal(preview.maintenance.phase, 'reviewed', output.join(''));
     assert(fs.existsSync(first)); assert(fs.existsSync(keep));
     const fileMode = operation === 'installer' || operation === 'purge';
@@ -147,6 +178,11 @@ for (const operation of ['installer', 'purge', 'clean', 'optimize']) {
     }
     await until(() => execution.state !== 'running', execution);
     assert.equal(execution.maintenance.outcome, 'complete', JSON.stringify(execution.maintenance));
+    if (operation === 'optimize') {
+      assert.equal(execution.maintenance.items[0].result, 'applied');
+      assert.equal(execution.maintenance.resultCounts.applied, 1);
+      assert.equal(execution.maintenance.resultCounts.unknown, 0);
+    }
     assert(fs.existsSync(keep), 'Unselected fixture must be preserved');
     if (fileMode) assert(!fs.existsSync(first)); else assert(fs.existsSync(path.join(root, 'batch-completed')));
     assert(!JSON.stringify(logs).includes('fixture-password'));

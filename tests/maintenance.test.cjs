@@ -78,6 +78,84 @@ test('size parsing preserves unknown sizes and rejects unsafe numeric totals', (
   assert.equal(sizeBytes('1000 EB'), null);
 });
 
+for (const failed of [false, true]) {
+  test(`optimization execution preserves per-task outcomes and reasons${failed ? ' when the native process fails' : ' when attention is required'}`, t => {
+    const h = harness(t, 'optimize');
+    const preview = h.start();
+    preview.child.stdout.emit('data', '➤ Finder Cache Refresh\n✓ preview-only\nDry Run Complete, No Changes Made\n');
+    preview.close();
+    const run = h.start('execute', { previewTaskId: preview.task.id });
+    run.event('confirm', 'batch', '0', '0');
+    h.controller.action(run.task.id, { action: 'confirm', promptToken: run.task.maintenance.promptToken });
+    run.event('executing');
+    run.event('reset_steps');
+    const cases = [
+      ['finder', 'Finder Cache Refresh', 'applied', '✓ Refreshed Finder'],
+      ['permissions', 'Permission Repair', 'unchanged', '✓ Permissions already optimal'],
+      ['network', 'Network Cache Refresh', 'skipped', '→ Admin access required'],
+      ['periodic', 'Periodic Maintenance', 'unavailable', '- Not available on this macOS version'],
+      ['login', 'Login Items', 'attention', '◎ Broken login item: Typeless (app not found)\n◎ 1 broken login item(s) · remove via System Settings > General > Login Items']
+    ];
+    if (failed) cases.push(['database', 'Database Optimization', 'failed', '✗ Database update failed: permission denied']);
+    for (const [action, title, result, detail] of cases) {
+      run.child.stdout.emit('data', `➤ ${title}\n${detail}\n`);
+      run.event('optimize_result', action, title, result);
+    }
+    run.child.stdout.emit('data', 'Applied 1 optimizations\n1 unchanged | 1 skipped | 1 unavailable | 1 need attention\nOptimization Complete\n');
+    run.close(failed ? 1 : 0);
+    const flow = run.task.maintenance;
+    assert.equal(flow.outcome, 'partial');
+    assert.equal(flow.phase, failed ? 'failed' : 'completed');
+    assert.equal(flow.items.length, cases.length);
+    assert.deepEqual(flow.items.map(item => item.result), cases.map(item => item[2]));
+    assert.equal(flow.items.find(item => item.result === 'attention').detail, '登录项 Typeless 对应的应用已不存在。\n请到系统设置 > 通用 > 登录项中移除。');
+    assert(flow.messages.some(message => message.text.includes('Broken login item: Typeless')), 'Original native diagnostics remain in the run records');
+    assert(!flow.items.some(item => /preview-only|unchanged \|/.test(item.detail)), 'Preview text and global summary must not replace task results');
+    assert.deepEqual(flow.resultCounts, { applied: 1, unchanged: 1, skipped: 1, unavailable: 1, attention: 1, failed: failed ? 1 : 0, unknown: 0 });
+    assert(h.logs.some(entry => entry.event === 'maintenance.step_result_received' && entry.result === 'attention'));
+  });
+}
+
+test('missing optimization outcomes remain unknown instead of claiming all tasks succeeded', t => {
+  const h = harness(t, 'optimize');
+  const preview = h.start();
+  preview.child.stdout.emit('data', '➤ Finder Cache Refresh\nDry Run Complete, No Changes Made\n');
+  preview.close();
+  const run = h.start('execute', { previewTaskId: preview.task.id });
+  run.event('confirm', 'batch', '0', '0');
+  h.controller.action(run.task.id, { action: 'confirm', promptToken: run.task.maintenance.promptToken });
+  run.event('reset_steps');
+  run.child.stdout.emit('data', '➤ Finder Cache Refresh\n✗ Mole returned no per-task outcome\nOptimization Complete\n');
+  run.close();
+  assert.equal(run.task.maintenance.outcome, 'unknown');
+  assert.equal(run.task.maintenance.resultCounts.unknown, 1);
+  assert.equal(run.task.maintenance.items[0].result, undefined);
+});
+
+test('a failed execution recheck never presents preview changes as applied results', t => {
+  const h = harness(t, 'optimize');
+  const preview = h.start();
+  preview.child.stdout.emit('data', '➤ Finder Cache Refresh\n✓ Would refresh Finder\nDry Run Complete, No Changes Made\n');
+  preview.event('optimize_result', 'finder', 'Finder Cache Refresh', 'applied');
+  preview.close();
+  const run = h.start('execute', { previewTaskId: preview.task.id });
+  run.child.stderr.emit('data', 'Unable to inspect Finder: permission denied\n');
+  run.close(1);
+  assert.equal(run.task.maintenance.phase, 'failed');
+  assert.equal(run.task.maintenance.items.length, 0);
+  assert.match(run.task.maintenance.message, /Unable to inspect Finder/);
+});
+
+test('native errors are retained in failed task messages without inventing a permission explanation', t => {
+  const h = harness(t);
+  const run = h.start();
+  run.child.stderr.emit('data', 'find: /fixture/Downloads: Permission denied\n');
+  run.close(4);
+  assert.equal(run.task.maintenance.phase, 'failed');
+  assert.match(run.task.maintenance.message, /Permission denied/);
+  assert.equal(run.task.exitCode, 4);
+});
+
 test('clean preview uses explicit sections, actual paths and opaque IDs', () => {
   const items = parseCleanPreview('# Mole Cleanup Preview - test\n=== User Caches ===\n~/Library/Caches/a # b  # 1.5 GB\n/tmp/unknown  # size unknown\n', '/Users/example');
   assert.equal(items[0].path, '/Users/example/Library/Caches/a # b');

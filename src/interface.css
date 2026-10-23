@@ -202,6 +202,12 @@ svg { flex-shrink: 0; }
 .plugin-shell .maintenance-item-state { color: var(--text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
 .plugin-shell .maintenance-item-state.removed { color: var(--accent); }
 .plugin-shell .maintenance-item-state.skipped { color: var(--warning); }
+.plugin-shell .maintenance-item-state.attention, .plugin-shell .maintenance-item-state.unavailable { color: var(--warning); }
+.plugin-shell .maintenance-item-state.failed { color: var(--danger); }
+.plugin-shell .maintenance-row:is(.result-attention, .result-failed) { background: var(--warning-soft); box-shadow: inset 3px 0 var(--warning-line); }
+.plugin-shell .maintenance-row:is(.result-attention, .result-failed) .maintenance-item-icon { color: var(--warning); background: #fff0cd; }
+.plugin-shell .maintenance-row:is(.result-attention, .result-failed) .maintenance-item-title small { white-space: pre-line; overflow: visible; overflow-wrap: anywhere; text-overflow: clip; }
+.plugin-shell .maintenance-exit-code { flex-shrink: 0; color: var(--warning); font-size: 10px; }
 .plugin-shell .maintenance-page input[type=checkbox], .plugin-shell .uninstall-page input[type=checkbox] { width: 15px; height: 15px; border-color: #8b98ad; border-radius: 4px; }
 .plugin-shell .maintenance-page input[type=checkbox]:checked, .plugin-shell .uninstall-page input[type=checkbox]:checked { background: var(--accent); border-color: var(--accent); }
 .plugin-shell input[type=checkbox]:indeterminate { background: var(--accent); border-color: var(--accent); }

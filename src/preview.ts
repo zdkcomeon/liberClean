@@ -1,5 +1,5 @@
 import type { MoleBridge } from './api';
-import type { Environment, InstalledApp, MaintenanceItem, MoleUpdate, Snapshot, StartTaskRequest, StatusState, Task } from './types';
+import type { Environment, InstalledApp, MaintenanceItem, MaintenanceResult, MoleUpdate, Snapshot, StartTaskRequest, StatusState, Task } from './types';
 
 /** Development-only fixtures. This bridge never reads or changes local files. */
 export function createPreviewBridge(): MoleBridge {
@@ -84,6 +84,10 @@ export function createPreviewBridge(): MoleBridge {
       } else if (task.uninstall) {
         task.uninstall = { phase: request.mode === 'execute' ? 'confirm' : 'reviewed', promptToken: 'preview-only', files: task.apps!.flatMap(app => [{ path: app.path, kind: 'app' as const, sizeLabel: app.sizeLabel }, { path: `${home}/Library/Caches/${app.bundleId}`, kind: 'related' as const, sizeLabel: '24 MB' }, { path: `${home}/Library/Application Support/${app.name}`, kind: 'kept' as const, sizeLabel: '156 MB' }]), notices: [], outcome: 'preview', message: '这是示例检查结果，不会访问或删除本机文件。' };
       } else if (task.maintenance) {
+        if (scenario === 'failure' && request.operation === 'installer') {
+          publish({ ...task, state: 'failed', exitCode: 4, endedAt: new Date().toISOString(), error: '安装包扫描失败：~/Downloads', maintenance: { ...task.maintenance, items: [], phase: 'failed', outcome: 'failed', message: '安装包扫描失败：~/Downloads', messages: [{ id: 'preview-error', tone: 'warning', text: 'find: ~/Downloads: Permission denied' }] } });
+          return;
+        }
         task.maintenance = { ...task.maintenance, phase: request.mode === 'execute' ? 'confirm' : 'reviewed', promptToken: 'preview-only', outcome: 'preview', message: '示例检查已完成，可以查看清单和体验确认流程。' };
       }
       if (request.mode === 'execute') publish(task); else finish(task);
@@ -125,6 +129,12 @@ export function createPreviewBridge(): MoleBridge {
     maintenanceAction(id) {
       const task = tasks.find(item => item.id === id);
       if (!task?.maintenance) throw new Error('示例任务不存在');
+      if (task.operation === 'optimize') {
+        const results: MaintenanceResult[] = scenario === 'partial' ? ['applied', 'skipped', 'attention'] : ['applied', 'unchanged', 'unchanged'];
+        const items = task.maintenance.items.map((item, index) => ({ ...item, result: results[index % results.length], detail: scenario === 'partial' && index === 1 ? '未授予管理员权限，已跳过此项目。' : scenario === 'partial' && index === 2 ? '发现失效的应用关联，请在系统设置中检查默认应用。' : '检查完成。' }));
+        const resultCounts = Object.fromEntries(['applied', 'unchanged', 'skipped', 'unavailable', 'attention', 'failed', 'unknown'].map(result => [result, items.filter(item => item.result === result).length])) as Record<MaintenanceResult | 'unknown', number>;
+        return finish({ ...task, maintenance: { ...task.maintenance, items, phase: 'completed', outcome: scenario === 'partial' ? 'partial' : 'complete', scanStatus: 'complete', resultCounts, message: scenario === 'partial' ? '已优化 1 项，已跳过 1 项，需处理 1 项' : '已优化 1 项，无需更改 2 项' } });
+      }
       const items = task.maintenance.items.map(item => ({ ...item, status: 'removed' as const }));
       return finish({ ...task, maintenance: { ...task.maintenance, items, phase: 'completed', outcome: 'complete', message: '示例流程已完成，没有修改本机文件。', summary: { selectedCount: items.length, completedCount: items.length, failedCount: 0 } } });
     },

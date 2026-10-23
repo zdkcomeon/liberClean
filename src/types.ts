@@ -140,6 +140,9 @@ export interface UninstallFlow {
   message?: string;
 }
 
+/** Native outcome of an optimization task; missing outcomes are never treated as success. */
+export type MaintenanceResult = 'applied' | 'unchanged' | 'skipped' | 'unavailable' | 'attention' | 'failed';
+
 /** A reviewed maintenance item. IDs refer only to the server-owned preview, never to an arbitrary path. */
 export interface MaintenanceItem {
   /** Opaque item ID; pass it back with previewTaskId for file selection. */
@@ -154,6 +157,8 @@ export interface MaintenanceItem {
   /** Only purge/installer items with a verified identity can be selected. */
   selectable: boolean;
   status: 'ready' | 'removed' | 'skipped';
+  /** Reported by Mole for batch tasks; applied means a proposed change during preview. */
+  result?: MaintenanceResult;
 }
 
 /** Progress comes from Mole's actual steps and result messages. */
@@ -162,6 +167,7 @@ export interface MaintenanceStep {
   title: string;
   detail: string;
   status: 'running' | 'completed' | 'warning';
+  result?: MaintenanceResult;
 }
 
 /** Graphical review, confirmation and administrator authentication for maintenance. */
@@ -182,6 +188,8 @@ export interface MaintenanceFlow {
   outcome?: 'preview' | 'complete' | 'partial' | 'unknown' | 'failed' | 'cancelled';
   message: string;
   summary?: { selectedCount: number; completedCount: number; failedCount: number };
+  /** Actual optimization outcomes, including tasks with no reported outcome. */
+  resultCounts?: Record<MaintenanceResult | 'unknown', number>;
 }
 
 /** A structured action is accepted only for its current task and one-use prompt token. */

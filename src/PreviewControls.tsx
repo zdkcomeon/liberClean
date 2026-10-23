@@ -1,7 +1,7 @@
 /** Development fixtures are chosen at the bridge boundary, never in production UI. */
 export function PreviewControls() {
   const scenarios = [
-    ['1', '示例'], ['stress', '边界'], ['empty', '空'], ['one', '单项'], ['many', '千项'], ['missing', '未安装'], ['partial', '部分']
+    ['1', '示例'], ['stress', '边界'], ['empty', '空'], ['one', '单项'], ['many', '千项'], ['missing', '未安装'], ['partial', '部分'], ['failure', '失败']
   ];
   const selected = new URLSearchParams(location.search).get('preview') || '1';
   return <nav className="preview-data-switcher" aria-label="开发预览数据">

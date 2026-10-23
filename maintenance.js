@@ -10,6 +10,7 @@ const MAINTENANCE_OPERATIONS = new Set(['clean', 'optimize', 'purge', 'installer
 const FILE_OPERATIONS = new Set(['purge', 'installer']);
 const MAX_ITEMS = 5000;
 const MAX_CAPTURE = 24 * 1024 * 1024;
+const OPTIMIZE_RESULTS = ['applied', 'unchanged', 'skipped', 'unavailable', 'attention', 'failed'];
 const PREVIEW_TTL = 30 * 60 * 1000;
 const ANSI = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[()][A-Z0-9])/g;
 const STEP_NAMES = {
@@ -43,6 +44,20 @@ function safeText(value) {
   return String(value || '').replace(ANSI, '').replace(/https?:\/\/[^\s]+/gi, '[url]')
     .replace(/\b(authorization|cookie|password|passwd|token|secret|api[_-]?key)\s*[:=]\s*[^\r\n]+/gi, '$1=[redacted]')
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').trim().slice(0, 2000);
+}
+
+function optimizationDetail(value) {
+  return value.split('\n').map(line => {
+    const text = line.replace(/^[✓◎→-]\s*/, '');
+    let match;
+    if ((match = /^Broken login item: (.+) \(app not found\)$/.exec(text))) return `登录项 ${match[1]} 对应的应用已不存在。`;
+    if (/^\d+ broken login item\(s\) · remove via System Settings > General > Login Items$/.test(text)) return '请到系统设置 > 通用 > 登录项中移除。';
+    if ((match = /^Close these apps before database optimization: (.+)$/.exec(text))) return `请先退出这些应用，再重新优化数据库：${match[1]}`;
+    if (text === 'Periodic maintenance skipped (not available on this macOS version)') return '当前 macOS 版本不提供此维护功能。';
+    if (text === 'Shared file lists not readable (check directory permissions and Full Disk Access)') return '无法读取共享文件列表，请检查目录权限和完全磁盘访问权限。';
+    if (text === 'Disk verify skipped') return 'Mole 已跳过磁盘验证。';
+    return line;
+  }).join('\n');
 }
 
 function resolvePurgePath(value, home) {
@@ -220,6 +235,14 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
     return display;
   }
 
+  function stepItems(task, runtime) {
+    return runtime.steps.map(step => ({ id: step.id, title: step.title, path: '', group: task.operation === 'optimize' ? '系统优化' : '深度清理', size: null, detail: task.operation === 'optimize' ? optimizationDetail(step.detail) : step.detail, selectable: false, status: 'ready', result: step.result || (task.operation !== 'optimize' && step.status === 'warning' ? 'attention' : undefined) }));
+  }
+
+  function syncSteps(task, runtime, patch = {}) {
+    update(task, { steps: runtime.steps.map(step => ({ ...step })), ...(!runtime.context.fileMode && runtime.confirmed ? { items: stepItems(task, runtime) } : {}), ...patch });
+  }
+
   function consume(task, runtime, raw) {
     const marker = `MOLE_GUI_${runtime.token}\t`;
     const index = raw.indexOf(marker);
@@ -237,6 +260,7 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
     const line = safeText(raw);
     if (!line) return;
     runtime.text = `${runtime.text}\n${line}`.slice(-2 * 1024 * 1024);
+    if (/^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠖⠲]/.test(line) || /^[─━═┄\s]+$/.test(line)) return;
     const heading = /^[➤➜▶]\s+(.+)$/.exec(line);
     if (heading) {
       const current = runtime.steps.at(-1);
@@ -248,15 +272,19 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
       const title = heading[1].trim();
       runtime.steps.push({ id: crypto.randomUUID(), title: STEP_NAMES[title] || title, detail: '', status: 'running' });
       if (runtime.steps.length > 120) runtime.steps.shift();
-      update(task, { steps: runtime.steps.map(item => ({ ...item })), message: `正在检查：${STEP_NAMES[title] || title}` });
+      syncSteps(task, runtime, { message: `正在${runtime.confirmed ? '执行' : '检查'}：${STEP_NAMES[title] || title}` });
       log(task, runtime, 'step_started', { title });
-    } else if (/^[✓✔✗✘⚠]|\b(?:failed|denied|skipped|unavailable|incomplete|would apply|applied \d|removed \d)\b/i.test(line)) {
-      const tone = /^[✗✘⚠]|\bfailed|denied|incomplete\b/i.test(line) ? 'warning' : 'info';
+    } else {
+      const tone = /^[✗✘⚠!]|\bfailed|denied|incomplete|error\b/i.test(line) ? 'warning' : 'info';
       runtime.messages.push({ id: crypto.randomUUID(), tone, text: line });
       runtime.messages = runtime.messages.slice(-60);
       const step = runtime.steps.at(-1);
-      if (step) { step.detail = line; if (tone === 'warning') step.status = 'warning'; }
-      update(task, { messages: runtime.messages.slice(), steps: runtime.steps.map(item => ({ ...item })) });
+      const summary = /^(?:Applied|Would apply) \d+ optimizations|^\d+ (?:unchanged|skipped|unavailable|need attention|failed)(?:\s*\||$)|^(?:Optimization|Dry Run|Cleanup|Clean) (?:Complete|finished)/i.test(line);
+      if (step && !step.result && !summary) {
+        if (!step.detail.split('\n').includes(line)) step.detail = [step.detail, line].filter(Boolean).join('\n').slice(0, 2000);
+        if (tone === 'warning') step.status = 'warning';
+      }
+      syncSteps(task, runtime, { messages: runtime.messages.slice() });
       log(task, runtime, 'step_reported', { tone, response: line });
     }
   }
@@ -318,11 +346,26 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
       runtime.stage = 'executing';
       update(task, { phase: 'executing', allowSkip: false, message: type === 'auth_accepted' ? '权限验证通过，正在继续维护' : '已跳过管理员步骤，正在继续处理其他项目' });
       log(task, runtime, type === 'auth_accepted' ? 'authentication_succeeded' : 'authentication_skipped');
+    } else if (type === 'optimize_result') {
+      const [action, nativeTitle, result] = values;
+      if (task.operation !== 'optimize' || !/^[a-z0-9_]+$/.test(action) || !nativeTitle || !OPTIMIZE_RESULTS.includes(result)) throw new Error('invalid optimization result');
+      const title = STEP_NAMES[nativeTitle] || safeText(nativeTitle);
+      const step = runtime.steps.slice().reverse().find(item => item.title === title);
+      if (!step || step.result) throw new Error('optimization result does not match a step');
+      step.result = result;
+      step.status = ['attention', 'failed'].includes(result) ? 'warning' : 'completed';
+      syncSteps(task, runtime);
+      log(task, runtime, 'step_result_received', { action, title, result, detail: step.detail });
+    } else if (type === 'failure') {
+      if (values[0] !== 'installer_scan' || task.operation !== 'installer' || !/^[1-9]\d*$/.test(values[1])) throw new Error('invalid failure report');
+      runtime.nativeFailure = `安装包扫描失败${values[2] ? `：${safeText(values[2])}` : ''}`;
+      log(task, runtime, 'scan_failed', { target: safeText(values[2]) || runtime.context.script, code: Number(values[1]), response: safeText(runtime.text).slice(-2000) });
     } else if (type === 'reset_steps') {
       if (!runtime.confirmed) throw new Error('unexpected step reset');
       runtime.steps = [];
       runtime.text = '';
-      update(task, { steps: [] });
+      runtime.messages = [];
+      update(task, { steps: [], items: [], messages: [] });
     } else if (type === 'finished') {
       if (runtime.nativeResult) throw new Error('duplicate completion');
       runtime.nativeResult = values;
@@ -364,12 +407,13 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
     let nativeCode = code;
     try { const recorded = Number(fs.readFileSync(runtime.exitFile, 'utf8').trim()); if (Number.isInteger(recorded) && recorded >= 0 && recorded <= 255) nativeCode = recorded; } catch {}
     const flow = { ...task.maintenance, promptToken: '', allowSkip: false };
-    let problem = runtime.failure || failure || '';
+    let problem = runtime.failure || failure || runtime.nativeFailure || '';
     if (!runtime.hello && !runtime.cancelRequested) problem ||= 'Mole 图形交互组件未能启动，请检查本机安装';
     if (runtime.cancelRequested) {
       flow.phase = 'cancelled'; flow.outcome = 'cancelled'; flow.message = runtime.confirmed ? '操作已停止，已经完成的处理不会撤销' : '检查已停止，没有执行清理';
     } else if (problem || nativeCode !== 0) {
-      flow.phase = 'failed'; flow.outcome = runtime.confirmed ? 'partial' : 'failed'; flow.message = safeText(problem) || 'Mole 未能完成本次操作，请检查结果说明与目录权限';
+      const reason = runtime.messages.slice().reverse().find(message => message.tone === 'warning')?.text || safeText(runtime.stderrTail);
+      flow.phase = 'failed'; flow.outcome = runtime.confirmed ? 'partial' : 'failed'; flow.message = safeText(problem) || (reason ? safeText(reason) : `Mole 已退出（退出码 ${nativeCode ?? '未知'}），未返回具体错误原因`);
     } else if (task.mode === 'preview') {
       try {
         if (runtime.context.fileMode) {
@@ -381,9 +425,9 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
           flow.items = parseCleanPreview(fs.readFileSync(runtime.previewFile, 'utf8'), os.homedir());
         } else {
           if (!/Dry Run Complete.*No Changes Made/i.test(runtime.text) || !runtime.steps.length) throw new Error('没有取得完整的优化检查结果，请重试');
-          flow.items = runtime.steps.map(step => ({ id: step.id, title: step.title, path: '', group: '系统优化', size: null, detail: step.detail, selectable: false, status: 'ready' }));
+          flow.items = stepItems(task, runtime);
         }
-        flow.phase = 'reviewed'; flow.outcome = 'preview'; flow.message = flow.items.length ? '检查完成，本次没有修改文件或系统设置' : '检查完成，没有发现需要处理的项目';
+        flow.phase = 'reviewed'; flow.outcome = 'preview'; flow.message = flow.items.length ? '检查完成，本次没有修改文件或系统设置' : task.operation === 'installer' ? '未发现可清理的安装包' : '检查完成，没有发现需要处理的项目';
         plans.set(task.id, { signature: runtime.context.signature, scanPath: runtime.context.scanPath, createdAt: Date.now(), items: runtime.context.fileMode ? runtime.items : flow.items });
         log(task, runtime, 'preview_saved', { count: flow.items.length, scanStatus: flow.scanStatus });
       } catch (error) { problem = error.message; flow.phase = 'failed'; flow.outcome = 'failed'; flow.message = problem; }
@@ -419,8 +463,20 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
     if (finalStep) log(task, runtime, 'step_finished', { title: finalStep.title, status: finalStep.status, stepElapsedMs: Date.now() - runtime.stepStartedAt });
     flow.steps = runtime.steps.map(item => ({ ...item }));
     flow.messages = runtime.messages.slice();
+    if (task.mode === 'execute' && !runtime.context.fileMode) {
+      flow.items = runtime.confirmed ? stepItems(task, runtime) : [];
+      if (runtime.confirmed && task.operation === 'optimize') {
+        const counts = Object.fromEntries([...OPTIMIZE_RESULTS, 'unknown'].map(result => [result, flow.items.filter(item => (item.result || 'unknown') === result).length]));
+        flow.resultCounts = counts;
+        if (flow.phase === 'completed') flow.outcome = counts.failed || counts.attention ? 'partial' : counts.unknown || !flow.items.length ? 'unknown' : 'complete';
+        if (!problem && flow.phase === 'completed' && flow.items.length) {
+          const labels = { applied: '已优化', unchanged: '无需更改', skipped: '已跳过', unavailable: '不适用', attention: '需处理', failed: '失败', unknown: '未返回明细' };
+          flow.message = Object.entries(counts).filter(([, count]) => count > 0).map(([result, count]) => `${labels[result]} ${count} 项`).join('，');
+        }
+      }
+    }
     task.maintenance = flow;
-    log(task, runtime, 'finished', { phase: flow.phase, outcome: flow.outcome, code: nativeCode, count: flow.items.length, summary: flow.summary || null });
+    log(task, runtime, 'finished', { phase: flow.phase, outcome: flow.outcome, code: nativeCode, count: flow.items.length, summary: flow.summary || null, resultCounts: flow.resultCounts, error: flow.phase === 'failed' ? flow.message : '', response: safeText(runtime.text).slice(-2000) });
     finishTask(task, runtime, nativeCode, signal, flow.phase === 'failed' ? flow.message : undefined);
     try { fs.rmSync(runtime.directory, { recursive: true, force: true }); } catch {}
   }

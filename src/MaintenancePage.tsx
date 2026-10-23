@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowRight, Check, CheckCircle2, ChevronDown, CircleStop, Clock3, File, Folder, Info, Loader2, LockKeyhole, RefreshCw, Search, ShieldCheck, Trash2, X, type LucideIcon } from 'lucide-react';
 import { bytes, duration, mole, shortPath, type MoleBridge } from './api';
-import { isActive, type MaintenanceActionRequest, type MaintenanceItem, type MaintenanceOperation, type Task } from './types';
+import { isActive, type MaintenanceActionRequest, type MaintenanceItem, type MaintenanceOperation, type MaintenanceResult, type Task } from './types';
 
 interface Props {
   operation: MaintenanceOperation;
@@ -17,10 +17,12 @@ interface Props {
 }
 
 const emptyItems: MaintenanceItem[] = [];
+const resultLabels: Record<MaintenanceResult | 'unknown', string> = { applied: '已优化', unchanged: '无需更改', skipped: '已跳过', unavailable: '不适用', attention: '需处理', failed: '失败', unknown: '未返回明细' };
 
 export function MaintenancePage({ operation, tool, task, home, ready, busy, now, onStart, onStop, onTask }: Props) {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('all');
+  const [resultFilter, setResultFilter] = useState('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(200);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -41,8 +43,15 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
   const previewReady = task?.mode === 'preview' && task.state === 'succeeded' && flow?.phase === 'reviewed';
   const reviewed = previewReady && !scopeChanged;
   const canSelect = reviewed && ready && !busy && !submitting;
+  const executingResults = task?.mode === 'execute' && !!flow && ['executing', 'authorizing', 'completed', 'failed', 'cancelled'].includes(flow.phase);
   const groups = useMemo(() => [...new Set(items.map(item => item.group).filter(Boolean))], [items]);
-  const filtered = useMemo(() => items.filter(item => (group === 'all' || item.group === group) && `${item.title} ${item.path} ${item.group}`.toLowerCase().includes(query.trim().toLowerCase())), [items, group, query]);
+  const filtered = useMemo(() => {
+    const matches = items.filter(item => {
+      const matchesResult = resultFilter === 'all' || (resultFilter === 'issues' ? ['attention', 'failed'].includes(item.result || '') : (item.result || 'unknown') === resultFilter);
+      return (group === 'all' || item.group === group) && matchesResult && `${item.title} ${item.path} ${item.group} ${item.detail}`.toLowerCase().includes(query.trim().toLowerCase());
+    });
+    return executingResults && !fileMode ? matches.sort((a, b) => Number(['attention', 'failed'].includes(b.result || '')) - Number(['attention', 'failed'].includes(a.result || ''))) : matches;
+  }, [items, group, query, resultFilter, executingResults, fileMode]);
   const selectable = filtered.filter(item => item.selectable);
   const selectedItems = items.filter(item => selected.has(item.id));
   const allSelected = selectable.length > 0 && selectable.every(item => selected.has(item.id));
@@ -53,9 +62,9 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
   const completed = flow?.phase === 'completed';
   const warning = flow?.phase === 'failed' || flow?.phase === 'cancelled' || flow?.outcome === 'partial' || flow?.outcome === 'unknown';
 
-  useEffect(() => { setSelected(new Set()); setError(''); setQuery(''); setGroup('all'); }, [task?.id]);
+  useEffect(() => { setSelected(new Set()); setError(''); setQuery(''); setGroup('all'); setResultFilter('all'); }, [task?.id]);
   useEffect(() => { if (projectMode && task?.path) setProjectPath(task.path); }, [projectMode, task?.id, task?.path]);
-  useEffect(() => { setVisibleCount(200); }, [query, group, task?.id]);
+  useEffect(() => { setVisibleCount(200); }, [query, group, resultFilter, task?.id]);
   useEffect(() => { if (waitingConfirmation) setReviewOpen(true); else setReviewOpen(false); }, [waitingConfirmation, flow?.promptToken]);
   useEffect(() => {
     if (reviewOpen) dialog.current?.showModal();
@@ -127,8 +136,10 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
       {busy && <div className="notice" role="status"><Info size={15} /><span>其他维护任务正在运行，请先完成或停止当前任务。</span></div>}
       {flow && !previewReady && <section className={`maintenance-status ${warning ? 'warning' : completed ? 'success' : ''}`} role="status">
         <div className="maintenance-status-icon">{running ? <Loader2 size={20} className="spin" /> : warning ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}</div>
-        <div><strong>{flow.phase === 'authorizing' ? flow.message || '需要管理员权限' : waitingConfirmation ? '等待确认' : running ? task?.mode === 'preview' ? '正在检查' : '正在处理' : flow.phase === 'cancelled' ? '操作已停止' : warning ? '请检查处理结果' : '处理完成'}</strong>{warning && <p>{flow.message}</p>}</div>
+        <div><strong>{running ? flow.phase === 'authorizing' ? flow.message || '需要管理员权限' : waitingConfirmation ? '等待确认' : task?.mode === 'preview' ? '正在检查' : '正在处理' : flow.message}</strong></div>
         {task && <span className="maintenance-elapsed"><Clock3 size={12} />{duration(task, now)}</span>}
+        {flow.phase === 'failed' && task?.exitCode != null && <span className="maintenance-exit-code">退出码 {task.exitCode}</span>}
+        {flow.phase === 'failed' && <button className="text-button" onClick={() => mole?.openLog()}>打开日志</button>}
         {running && task && <button className="text-button danger-text" onClick={() => onStop(task)} disabled={task.state === 'cancelling'}><CircleStop size={13} />停止</button>}
       </section>}
       {flow?.phase === 'authorizing' && running && <form className="maintenance-auth" onSubmit={event => { event.preventDefault(); act('password'); }}>
@@ -137,25 +148,25 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
       {flow?.scanStatus === 'partial' && <div className="notice warning"><Info size={15} /><span>部分目录未能完整检查。当前列表只包含已取得的项目，可检查目录权限后重新扫描。</span></div>}
       {flow?.summary && <div className="maintenance-result-counts"><span><CheckCircle2 size={14} />已清理 <strong>{flow.summary.completedCount}</strong> 项</span><span><Info size={14} />仍保留 <strong>{flow.summary.failedCount}</strong> 项</span></div>}
       {(items.length > 0 || running || reviewed) ? <section className="card maintenance-library" aria-label={fileMode ? '文件清单' : operation === 'optimize' ? '维护项目' : '文件与目录'}>
-        {items.length > 0 && <div className="maintenance-filters"><label className="app-search"><Search size={14} /><input aria-label="搜索维护项目" value={query} onChange={event => setQuery(event.target.value)} placeholder={fileMode ? '搜索名称或路径' : '筛选检查结果'} />{query && <button aria-label="清空搜索" onClick={() => setQuery('')}><X size={13} /></button>}</label><select aria-label="按类别筛选" value={group} onChange={event => setGroup(event.target.value)}><option value="all">全部类别</option>{groups.map(value => <option key={value} value={value}>{shortPath(value, home)}</option>)}</select></div>}
+        {items.length > 0 && <div className="maintenance-filters"><label className="app-search"><Search size={14} /><input aria-label="搜索维护项目" value={query} onChange={event => setQuery(event.target.value)} placeholder={fileMode ? '搜索名称或路径' : executingResults ? '搜索执行结果' : '筛选检查结果'} />{query && <button aria-label="清空搜索" onClick={() => setQuery('')}><X size={13} /></button>}</label>{executingResults && !fileMode ? <select aria-label="按执行结果筛选" value={resultFilter} onChange={event => setResultFilter(event.target.value)}><option value="all">全部结果</option><option value="issues">仅看需处理项</option>{Object.entries(resultLabels).filter(([result]) => items.some(item => (item.result || 'unknown') === result)).map(([result, label]) => <option key={result} value={result}>{label}</option>)}</select> : <select aria-label="按类别筛选" value={group} onChange={event => setGroup(event.target.value)}><option value="all">全部类别</option>{groups.map(value => <option key={value} value={value}>{shortPath(value, home)}</option>)}</select>}</div>}
         <div className={`maintenance-list-head ${fileMode ? 'with-selection' : ''}`}>
           {fileMode && <input type="checkbox" ref={element => { if (element) element.indeterminate = partlySelected; }} aria-label={`全选当前筛选结果 ${selectable.length} 项`} checked={allSelected} disabled={!canSelect || !selectable.length} onChange={toggleAll} />}
-          <span>{fileMode ? '名称与位置' : '检查项目'} <small className="list-count">{filtered.length.toLocaleString()}{filtered.length !== items.length ? ` / ${items.length.toLocaleString()}` : ''} 项</small></span><span>{completed ? '处理结果' : '大小 / 状态'}</span>
+          <span>{fileMode ? '名称与位置' : executingResults ? '执行项目' : '检查项目'} <small className="list-count">{filtered.length.toLocaleString()}{filtered.length !== items.length ? ` / ${items.length.toLocaleString()}` : ''} 项</small></span><span>{executingResults ? '执行结果' : operation === 'optimize' ? '检查结果' : '大小 / 状态'}</span>
         </div>
         <div className="maintenance-items">
-          {filtered.slice(0, visibleCount).map(item => <div key={item.id} className={`maintenance-row ${fileMode ? 'with-selection' : ''} ${selected.has(item.id) ? 'selected' : ''}`}>
+          {filtered.slice(0, visibleCount).map(item => <div key={item.id} className={`maintenance-row ${fileMode ? 'with-selection' : ''} ${selected.has(item.id) ? 'selected' : ''} result-${item.result || 'unknown'}`}>
             {fileMode && <input id={`maintenance-${item.id}`} type="checkbox" aria-label={`选择 ${item.title}`} checked={task?.mode === 'execute' ? flow?.selectedIds.includes(item.id) : selected.has(item.id)} disabled={!canSelect || !item.selectable} onChange={() => toggle(item)} />}
             <label className="maintenance-item-title" htmlFor={fileMode ? `maintenance-${item.id}` : undefined}>
-              <span className={`maintenance-item-icon ${tool.color}`}>{operation === 'optimize' ? <CheckCircle2 size={17} /> : fileMode && operation === 'installer' ? <File size={17} /> : <Folder size={17} />}</span>
+              <span className={`maintenance-item-icon ${tool.color}`}>{['attention', 'failed'].includes(item.result || '') ? <AlertCircle size={17} /> : operation === 'optimize' ? item.result === 'skipped' || item.result === 'unavailable' || executingResults && !item.result ? <Info size={17} /> : <CheckCircle2 size={17} /> : fileMode && operation === 'installer' ? <File size={17} /> : <Folder size={17} />}</span>
               <span><strong title={item.title}>{item.title}</strong><small title={item.path || item.detail}>{item.path ? shortPath(item.path, home) : item.detail || item.group}</small>{item.detail && item.path && <em title={item.detail}>{item.detail}</em>}</span>
             </label>
-            <span className={`maintenance-item-state ${item.status}`}>{item.status === 'removed' ? <><Check size={12} />已清理</> : item.status === 'skipped' ? '仍保留' : item.size != null ? bytes(item.size) : operation === 'optimize' ? '已检查' : '未测量'}</span>
+            <span className={`maintenance-item-state ${item.result || item.status}`}>{item.status === 'removed' ? <><Check size={12} />已清理</> : item.status === 'skipped' ? '仍保留' : item.result ? item.result === 'applied' && !executingResults ? '可优化' : resultLabels[item.result] : executingResults ? running ? '处理中' : '未返回明细' : item.size != null ? bytes(item.size) : operation === 'optimize' ? '已检查' : '未测量'}</span>
           </div>)}
           {filtered.length > visibleCount && <button className="maintenance-load-more" onClick={() => setVisibleCount(value => value + 200)}>显示更多项目（还有 {filtered.length - visibleCount} 项）</button>}
-          {!filtered.length && <div className="maintenance-list-empty">{running ? <><Loader2 size={24} className="spin" /><strong>{fileMode ? '正在查找文件' : '正在读取检查结果'}</strong></> : <><Search size={24} /><strong>{scopeChanged ? '目录已更改，请重新检查' : query || group !== 'all' ? '没有匹配的项目' : projectMode ? '未找到可清理的项目' : '没有需要处理的项目'}</strong>{projectMode && !scopeChanged && !query && group === 'all' && <p>可改选上级目录，查找依赖与构建产物。</p>}{(query || group !== 'all') && <button className="text-button" onClick={() => { setQuery(''); setGroup('all'); }}>清除筛选条件</button>}</>}</div>}
+          {!filtered.length && <div className="maintenance-list-empty">{running ? <><Loader2 size={24} className="spin" /><strong>{fileMode ? '正在查找文件' : executingResults ? '正在读取执行结果' : '正在读取检查结果'}</strong></> : <><Search size={24} /><strong>{scopeChanged ? '目录已更改，请重新检查' : query || group !== 'all' || resultFilter !== 'all' ? '没有匹配的项目' : operation === 'installer' ? '未发现可清理的安装包' : projectMode ? '未找到可清理的项目' : '没有需要处理的项目'}</strong>{projectMode && !scopeChanged && !query && group === 'all' && <p>可改选上级目录，查找依赖与构建产物。</p>}{(query || group !== 'all' || resultFilter !== 'all') && <button className="text-button" onClick={() => { setQuery(''); setGroup('all'); setResultFilter('all'); }}>清除筛选条件</button>}</>}</div>}
         </div>
-      </section> : <section className="maintenance-empty"><span className="maintenance-empty-icon"><tool.icon size={34} strokeWidth={1.4} /></span><h2>{emptyTitle}</h2>{!task && inspectButton}</section>}
-      {!!flow && (flow.steps.length > 0 || flow.messages.length > 0) && <details className="maintenance-detail"><summary><span><Info size={13} />详细信息</span><ChevronDown size={13} /></summary><div className="maintenance-report-detail"><div className="maintenance-progress-steps">{flow.steps.map(step => <div key={step.id}>{step.status === 'running' ? <Loader2 size={14} className="spin" /> : step.status === 'warning' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}<span><strong>{step.title}</strong>{step.detail && <small>{step.detail}</small>}</span></div>)}</div><div className="maintenance-messages">{flow.messages.map(message => <p key={message.id} className={message.tone}>{message.text}</p>)}</div></div></details>}
+      </section> : !flow && <section className="maintenance-empty"><span className="maintenance-empty-icon"><tool.icon size={34} strokeWidth={1.4} /></span><h2>{emptyTitle}</h2>{!task && inspectButton}</section>}
+      {!!flow && (flow.steps.length > 0 || flow.messages.length > 0) && <details className="maintenance-detail" open={flow.phase === 'failed' && !items.length}><summary><span><Info size={13} />{flow.phase === 'failed' ? '错误详情与运行记录' : '运行记录'}</span><ChevronDown size={13} /></summary><div className="maintenance-report-detail"><div className="maintenance-messages">{flow.messages.map(message => <p key={message.id} className={message.tone}>{message.text}</p>)}</div></div></details>}
     </div>
     {flow && (reviewed || waitingConfirmation) && <div className="maintenance-action-bar">
       <div>{fileMode && reviewed ? <><span><strong>已选择 {selectedItems.length} 项</strong>{selectedItems.length > 0 && <small>{bytes(totalSize)}{unknownSize ? '，部分大小未知' : ''}</small>}</span>{selected.size > 0 && <button className="text-button" onClick={() => setSelected(new Set())} disabled={!canSelect}>清空</button>}</> : <span><strong>{items.length} 个项目</strong></span>}</div>

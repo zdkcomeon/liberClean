@@ -4,7 +4,7 @@
 
 LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools 插件，为 macOS 提供系统状态查看、磁盘分析、应用卸载和日常维护的图形界面。
 
-[最新版本 v0.2.0](https://github.com/zdkcomeon/liberClean/releases/tag/v0.2.0) · [发布说明](./docs/releases/v0.2.0.md) · [下载已构建的插件目录](https://github.com/zdkcomeon/liberClean/releases/download/v0.2.0/LiberClean-v0.2.0-dist.zip)
+[v0.3.0](https://github.com/zdkcomeon/liberClean/tree/v0.3.0) · [发布说明](./docs/releases/v0.3.0.md) · [发行版本与下载](https://github.com/zdkcomeon/liberClean/releases)
 
 界面采用接近 macOS 的灰白配色、简短标题和轻量控件，默认内容高度为 544 DIP，加上 uTools 顶部输入栏后，标准窗口总高度约为 600 DIP。主要功能通过顶部导航切换，操作记录和环境设置位于右上角。页面突出内容和主要操作，详细记录、帮助与关于信息按需展开；删除范围与权限提示在执行和授权时展示。实际维护由本机安装的 Mole 执行，支持先检查、再选择和确认操作。
 
@@ -16,9 +16,9 @@ LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools
 | 磁盘分析 | 选择目录，查看占用并逐层浏览子目录 |
 | 深度清理 | 预览缓存、日志等清理范围，确认后按 Mole 规则执行 |
 | 应用卸载 | 显示应用原生图标，选择并检查关联文件和保留项目后确认卸载 |
-| 系统优化 | 检查维护项目，确认后执行缓存刷新等系统维护 |
+| 系统优化 | 检查并确认维护项目，逐项查看执行状态、原因与处理建议 |
 | 项目清理 | 选择项目目录或上级目录，检查依赖与构建产物，勾选并复核后清理 |
-| 安装包清理 | 查找安装包，勾选并确认需要移除的文件 |
+| 安装包清理 | 查找并选择安装包，区分正常空结果和扫描失败 |
 | 操作记录 | 查看 Mole 保存在本机的命令记录与删除记录 |
 | 环境设置 | 自动检测或手动指定 mo 路径，查看版本、打开日志和更新 Mole |
 
@@ -26,16 +26,20 @@ LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools
 
 ## 功能截图
 
-以下截图使用预览模式的示例数据。实际设备、文件清单和应用图标以本机检查结果为准。
+以下为 v0.3.0 界面截图，使用 800 × 544 的内容窗口和预览模式示例数据。实际设备、文件清单和应用图标以本机检查结果为准。
 
 <table>
   <tr>
     <td width="50%"><strong>系统概览</strong><p>查看设备、健康评分、实时指标和磁盘空间。</p><img src="./docs/images/overview.jpg" alt="系统概览：设备信息、CPU、内存、网络和存储空间" width="400" /></td>
-    <td width="50%"><strong>磁盘分析</strong><p>查看目录占用，按目录逐层浏览。</p><img src="./docs/images/disk-analysis.jpg" alt="磁盘分析：目录占用图和文件清单" width="400" /></td>
+    <td width="50%"><strong>磁盘分析</strong><p>查看目录占用，按目录逐层浏览。</p><img src="./docs/images/disk-analysis.jpg" alt="磁盘分析：目录占用和文件清单" width="400" /></td>
   </tr>
   <tr>
     <td width="50%"><strong>检查与维护</strong><p>先检查清理范围，查看清单后再确认。</p><img src="./docs/images/maintenance.jpg" alt="深度清理：检查结果、文件与目录清单以及确认入口" width="400" /></td>
     <td width="50%"><strong>应用卸载</strong><p>搜索和选择应用，检查关联文件后卸载。</p><img src="./docs/images/uninstall.jpg" alt="应用卸载：应用搜索、选择和关联文件检查入口" width="400" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><strong>系统优化结果</strong><p>逐项查看状态，需处理项置顶并显示原因。</p><img src="./docs/images/optimization-results.jpg" alt="系统优化：执行结果、需处理原因和结果筛选" width="400" /></td>
+    <td width="50%"><strong>项目清理</strong><p>选择项目或上级目录，复核后清理构建产物。</p><img src="./docs/images/project-cleanup.jpg" alt="项目清理：指定目录、检查结果和文件选择" width="400" /></td>
   </tr>
   <tr>
     <td width="50%"><strong>安装包清理</strong><p>搜索、筛选并勾选需要处理的安装包。</p><img src="./docs/images/installer.jpg" alt="安装包清理：检查结果、文件选择和确认入口" width="400" /></td>
@@ -47,7 +51,7 @@ LiberClean 是一个基于 [Mole](https://github.com/tw93/Mole) 的独立 uTools
 
 - macOS，支持 Apple Silicon 和 Intel Mac。
 - 已安装 [uTools](https://www.u-tools.cn/)。
-- 已安装 Mole CLI。当前图形维护适配已在 Mole `1.61.0` 验证，其他版本需以运行时兼容性检查为准。
+- 已安装 Mole CLI。图形维护适配已覆盖 Mole `1.61.0` 与 `1.62.0` 的检查流程，其他版本以运行时兼容性检查为准。
 - 从源码开发或构建时，需要 Node.js `22.12+` 和 pnpm。日常运行插件使用 uTools 提供的运行环境。
 
 ### 安装 Mole
@@ -67,7 +71,7 @@ mo --version
 
 ### 使用发布的构建目录
 
-1. 在 [Releases](https://github.com/zdkcomeon/liberClean/releases/latest) 下载 `LiberClean-v0.2.0-dist.zip` 并解压。
+1. 在 [Releases](https://github.com/zdkcomeon/liberClean/releases) 下载对应版本的插件目录 ZIP 并解压。
 2. 在 uTools 开发者工具中导入解压后的 `dist/plugin.json`，按提示安装并打开。
 3. 升级后结束插件进程并重新打开，以加载新版界面和本地脚本。
 
@@ -200,7 +204,7 @@ dist/                     构建生成的插件目录，不提交到 Git
 
 ### 更新或维护失败
 
-先查看页面中的结果说明，再在环境设置中点击打开日志。插件日志路径为 `~/Library/Logs/mo-utools/plugin.log`，其中记录检测、任务执行和更新过程。Mole 的操作记录通过插件的操作记录页面查看。
+系统优化的执行结果会逐项显示，需处理和失败的项目位于前面，可按状态筛选。扫描失败时直接查看页面上的失败目录、退出码和错误记录，也可点击打开日志继续排查。插件日志路径为 `~/Library/Logs/mo-utools/plugin.log`，其中记录检测、任务执行和更新过程；环境设置也提供打开日志入口。Mole 的操作记录通过插件的操作记录页面查看。
 
 ### 修改代码后仍显示旧界面
 

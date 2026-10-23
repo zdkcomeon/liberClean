@@ -350,21 +350,22 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
   const total = Math.max(1, report?.totalSize || 0);
   const statusText = report?.scanStatus === 'complete' ? '扫描完成' : report?.scanStatus === 'partial' ? '部分目录未能完整扫描' : '无法读取目录';
 
-  return <>
-    <PageTitle title="分析目录占用" subtitle="选择目录开始扫描，点击结果中的文件夹可继续分析。" />
+  return <div className="analyze-page list-workspace">
+    <PageTitle title="磁盘分析" subtitle="选择目录开始扫描，点击文件夹继续分析。" />
     <section className="card scan-controls">
-      <label htmlFor="scan-path">分析目录</label>
+      <label className="sr-only" htmlFor="scan-path">分析目录</label>
       <form onSubmit={event => { event.preventDefault(); onStart({ operation: 'analyze', mode: 'scan', path }); }}>
         <div className="path-input"><Folder size={18} /><input id="scan-path" value={path} onChange={event => setPath(event.target.value)} placeholder="输入目录，例如 ~/Downloads" required /></div>
+        <select aria-label="常用分析目录" value="" onChange={event => setPath(event.target.value)}>
+          <option value="" disabled>常用目录</option>
+          {[{ label: '主目录', path: environment?.home }, { label: '下载', path: environment?.home && `${environment.home}/Downloads` }, { label: '应用程序', path: '/Applications' }, { label: '外接磁盘', path: '/Volumes' }].map(item => <option key={item.label} value={item.path || ''} disabled={!item.path}>{item.label}</option>)}
+        </select>
         <button type="button" className="secondary" onClick={() => { const picked = mole?.pickDirectory(); if (picked) setPath(picked); }}><Folder size={15} /> 选择</button>
         <button className="primary" disabled={busy || running || !path || !environment?.ready}>{running ? <Loader2 size={16} className="spin" /> : <Search size={16} />} 开始分析</button>
       </form>
-      <div className="path-shortcuts">快速选择
-        {[{ label: '主目录', path: environment?.home }, { label: '下载', path: environment?.home && `${environment.home}/Downloads` }, { label: '应用程序', path: '/Applications' }, { label: '外接磁盘', path: '/Volumes' }].map(item => <button key={item.label} disabled={!item.path} onClick={() => item.path && setPath(item.path)}>{item.label}</button>)}
-      </div>
     </section>
 
-    {task && <div className="task-summary">
+    {task && (!report || running || task.error) && <div className="task-summary">
       <div className="task-summary-heading">
         <div><StateBadge task={task} /><span className="task-mode">只读分析</span><span className="task-elapsed"><Clock3 size={13} />{duration(task, now)}</span></div>
         {running && <button className="text-button danger-text" onClick={() => onStop(task)} disabled={task.state === 'cancelling'}>停止分析</button>}
@@ -383,9 +384,6 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
         <button aria-label="分析根目录" disabled={running} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: '/' })}><HardDrive size={15} /></button>
         {report.path.split('/').filter(Boolean).map((part, index, all) => <span key={index}><ChevronRight size={13} /><button disabled={running} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: `/${all.slice(0, index + 1).join('/')}` })}>{part}</button></span>)}
       </div>
-      <div className="scan-treemap" aria-label="已测量目录容量比例">
-        {entries.filter(entry => entry.size && entry.size > total * 0.015).slice(0, 8).map((entry, index) => <button key={entry.path} disabled={!entry.isDir || running} title={`${entry.name}: ${bytes(entry.size)}`} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: entry.path })} style={{ flexGrow: Math.max(1, (entry.size || 0) / total * 100), background: ['#e6edfc', '#dce9f3', '#e9e2f6', '#dee7f6', '#f2e5d8', '#e3e8ee', '#e5edfb', '#eee7dc'][index] }}><Folder size={18} /><strong>{entry.name}</strong><span>{bytes(entry.size)}</span></button>)}
-      </div>
       <div className="list-filter"><Search size={15} /><input aria-label="筛选当前目录" value={filter} onChange={event => setFilter(event.target.value)} placeholder="筛选当前目录…" /><span>{entries.length} 项</span></div>
       <div className="file-list">
         <div className="file-row file-head"><span>名称</span><span>已测量大小</span><span>扫描状态</span><span /></div>
@@ -397,14 +395,19 @@ function AnalyzePage({ task, environment, busy, onStart, onStop, now }: {
         </button>)}
         {!entries.length && <div className="empty-state compact-empty"><Folder size={28} /><p>{report.scanStatus === 'complete' ? filter ? '没有匹配的项目' : '这个目录没有可显示的项目' : '尚未获得可用的目录结果'}</p></div>}
       </div>
-      {!!report.largeFiles?.length && <div className="large-files"><h3>大文件</h3>{report.largeFiles.slice(0, 20).map(file => <div key={file.path}><span title={file.path}><File size={15} />{file.name}</span><strong>{bytes(file.size)}</strong></div>)}</div>}
+      <div className="scan-extras">
+        <details className="scan-visualization" onToggle={event => { if (event.currentTarget.open) event.currentTarget.scrollIntoView({ block: 'nearest' }); }}><summary>容量分布 <ChevronDown size={13} /></summary><div className="scan-treemap" aria-label="已测量目录容量比例">
+          {entries.filter(entry => entry.size && entry.size > total * 0.015).slice(0, 8).map((entry, index) => <button key={entry.path} disabled={!entry.isDir || running} title={`${entry.name}: ${bytes(entry.size)}`} onClick={() => onStart({ operation: 'analyze', mode: 'scan', path: entry.path })} style={{ flexGrow: Math.max(1, (entry.size || 0) / total * 100), background: ['#e6edfc', '#dce9f3', '#e9e2f6', '#dee7f6', '#f2e5d8', '#e3e8ee', '#e5edfb', '#eee7dc'][index] }}><Folder size={18} /><strong>{entry.name}</strong><span>{bytes(entry.size)}</span></button>)}
+        </div></details>
+        {!!report.largeFiles?.length && <details className="large-files" onToggle={event => { if (event.currentTarget.open) event.currentTarget.scrollIntoView({ block: 'nearest' }); }}><summary>大文件 · {report.largeFiles.length} 项 <ChevronDown size={13} /></summary><div className="large-file-list">{report.largeFiles.slice(0, 20).map(file => <div key={file.path}><span title={file.path}><File size={15} />{file.name}</span><strong>{bytes(file.size)}</strong></div>)}</div></details>}
+      </div>
     </section> : !running && <div className="empty-state scan-empty">
       <div className="scan-empty-art"><HardDrive size={38} /><span><Search size={17} /></span></div>
       <h2>选择一个目录开始分析</h2>
       <p>选择目录并开始分析，结果会以容量分布和文件列表展示。</p>
       <div className="empty-feature-row"><span><ShieldCheck size={14} /> 只读扫描</span><span><Folder size={14} /> 逐层探索</span><span><LockKeyhole size={14} /> 本机处理</span></div>
     </div>}
-  </>;
+  </div>;
 }
 
 function HistoryPage() {
@@ -425,18 +428,19 @@ function HistoryPage() {
     }
   }, []);
   useEffect(() => { void load(); }, [load]);
-  return <>
-    <PageTitle title="操作记录" subtitle="读取 Mole 保存的历史记录，本次任务结果可在对应工具中查看。">
-      <button className="secondary compact" onClick={() => void load()} disabled={loading}><RefreshCw size={14} className={loading ? 'spin' : ''} /> 刷新</button>
+  return <div className="history-page list-workspace">
+    <PageTitle title="操作记录" subtitle="查看 Mole 保存在本机的命令与删除记录。">
+      <div className="history-actions">
+        <div className="segmented">
+          <button className={tab === 'sessions' ? 'selected' : ''} onClick={() => setTab('sessions')}><TerminalIcon size={14} /> 命令记录 <span>{history?.sessions.length ?? 0}</span></button>
+          <button className={tab === 'deletions' ? 'selected' : ''} onClick={() => setTab('deletions')}><Trash2 size={14} /> 删除记录 <span>{history?.deletions.length ?? 0}</span></button>
+        </div>
+        <button className="secondary compact" onClick={() => void load()} disabled={loading}><RefreshCw size={14} className={loading ? 'spin' : ''} /> 刷新</button>
+      </div>
     </PageTitle>
     {error && <Notice tone="warning">{error}</Notice>}
-    <div className="history-toolbar">
-      <div className="segmented">
-        <button className={tab === 'sessions' ? 'selected' : ''} onClick={() => setTab('sessions')}><TerminalIcon size={14} /> 命令记录 <span>{history?.sessions.length ?? 0}</span></button>
-        <button className={tab === 'deletions' ? 'selected' : ''} onClick={() => setTab('deletions')}><Trash2 size={14} /> 删除记录 <span>{history?.deletions.length ?? 0}</span></button>
-      </div>
-    </div>
     <section className="card history-card">
+      <div className="history-list">
       {loading && !history ? <div className="empty-state"><Loader2 className="spin" /><p>正在读取 Mole 操作记录…</p></div>
         : tab === 'sessions' ? (history?.sessions.length ? <>
           <div className="history-row history-head"><span>命令</span><span>开始时间</span><span>记录信息</span><span /></div>
@@ -454,8 +458,9 @@ function HistoryPage() {
             <span>{item.status || '—'}<small>{item.sizeKb == null ? '大小未知' : bytes(item.sizeKb * 1024)}</small></span>
             <span />
           </div>)}</> : <div className="empty-state"><Trash2 size={30} /><h2>暂无删除记录</h2><p>Mole 会把实际删除的文件记录在本地日志中。</p></div>)}
+      </div>
     </section>
-  </>;
+  </div>;
 }
 
 function SettingsPage({ environment, environmentError, onRefresh, onEnvironment, update, taskBusy, onUpdate }: {

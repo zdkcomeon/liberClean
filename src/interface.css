@@ -453,6 +453,115 @@ html[data-input-method=keyboard] .plugin-shell :is(button, a, dialog[open]) { tr
   .plugin-shell .storage-overview { margin-bottom: 8px; }
 }
 
+/* List pages reserve space for rows; extra content scrolls without collapsing the list. */
+.plugin-shell .page-content:has(> .list-workspace) { display: flex; flex-direction: column; padding: 12px 16px; }
+.plugin-shell .page-content:has(> .list-workspace) > :not(.list-workspace) { flex-shrink: 0; }
+.plugin-shell .list-workspace { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.plugin-shell .list-workspace > :not(.application-library, .maintenance-library, .scan-results, .history-card, dialog) { flex-shrink: 0; }
+.plugin-shell .list-workspace > .list-workspace-body { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 1px; margin: -1px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.plugin-shell .list-workspace-body > :not(.application-library, .maintenance-library) { flex-shrink: 0; }
+.plugin-shell .list-workspace .page-heading { align-items: center; flex-direction: row; gap: 12px; margin-bottom: 8px; min-height: 30px; }
+.plugin-shell .list-workspace .page-heading > div:not(.maintenance-title, .history-actions), .plugin-shell .list-workspace .maintenance-title > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.plugin-shell .list-workspace .page-heading h1 { font-size: 17px; line-height: 1.4; letter-spacing: -.4px; }
+.plugin-shell .list-workspace .page-heading p { margin: 0; font-size: 11px; line-height: 1.5; }
+.plugin-shell .list-workspace .maintenance-title { gap: 8px; }
+.plugin-shell .list-workspace .maintenance-icon { width: 30px; height: 30px; flex-basis: 30px; border-radius: 8px; }
+.plugin-shell .list-workspace :is(.application-library, .maintenance-library, .scan-results, .history-card) { display: flex; flex: 1; flex-direction: column; min-height: min-content; padding: 0; overflow: hidden; border-radius: 9px; }
+.plugin-shell .list-workspace :is(.app-library-controls, .maintenance-filters) { flex-shrink: 0; padding: 8px 10px; gap: 8px; }
+.plugin-shell .list-workspace .app-search { min-height: 30px; padding: 5px 8px; }
+.plugin-shell .list-workspace .app-search input { font-size: 11px; }
+.plugin-shell .list-workspace :is(.app-library-controls, .maintenance-filters) select { min-height: 30px; padding: 5px 8px; }
+.plugin-shell .list-workspace :is(.app-list-head, .maintenance-list-head) { min-height: 28px; padding: 5px 10px; }
+.list-count { margin-left: 6px; color: var(--text-muted); font-size: 10px; font-weight: 400; white-space: nowrap; }
+/* Row counts must not determine a flex panel's intrinsic minimum height. */
+.plugin-shell .list-workspace :is(.app-list, .maintenance-items, .history-list) { flex: 1; height: 0; min-height: 192px; contain: size; overflow: auto; overscroll-behavior: auto; scrollbar-width: thin; }
+.plugin-shell .list-workspace .virtual-app-list { overflow: hidden; }
+.plugin-shell .list-workspace :is(.application-row, .maintenance-row) { min-height: 44px; padding: 6px 10px; }
+.plugin-shell .list-workspace .application-select { gap: 8px; }
+.plugin-shell .list-workspace .application-icon:not(.compact-icon) { width: 30px; height: 30px; flex-basis: 30px; }
+.plugin-shell .list-workspace .application-text strong { line-height: 16px; }
+.plugin-shell .list-workspace .application-text > span { margin-top: 2px; line-height: 14px; }
+.plugin-shell .list-workspace .maintenance-item-title { gap: 8px; }
+.plugin-shell .list-workspace .maintenance-item-icon { width: 28px; height: 28px; flex-basis: 28px; border-radius: 6px; }
+.plugin-shell .list-workspace .maintenance-item-title > span:last-child { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; }
+.plugin-shell .list-workspace .maintenance-item-title strong { grid-column: 1 / -1; margin: 0; line-height: 16px; }
+.plugin-shell .list-workspace .maintenance-item-title :is(small, em) { margin: 0; line-height: 14px; }
+.plugin-shell .list-workspace .maintenance-item-title em { max-width: 220px; font-size: 9px; }
+.plugin-shell .list-workspace .maintenance-item-title > span:not(:has(em)) small { grid-column: 1 / -1; }
+.plugin-shell .list-workspace :is(.library-footnote, .maintenance-list-note) { flex-shrink: 0; min-height: 24px; padding: 5px 10px; line-height: 1.5; }
+.plugin-shell .list-workspace :is(.app-selection-bar, .maintenance-action-bar) { position: static; min-height: 40px; padding: 5px 10px; margin-top: 8px; gap: 10px; border-radius: 8px; }
+.plugin-shell .list-workspace :is(.app-selection-bar, .maintenance-action-bar) :is(.primary, .secondary) { min-height: 30px; padding: 5px 10px; font-size: 11px; }
+.plugin-shell .selection-summary { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.plugin-shell .selection-summary strong { white-space: nowrap; }
+.selection-names { min-width: 0; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 11px; }
+.plugin-shell .list-workspace .maintenance-action-bar .selected-count { width: 24px; height: 24px; flex-basis: 24px; border-radius: 6px; }
+.plugin-shell .list-workspace .maintenance-action-bar > div > span:not(.selected-count) { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 10px; }
+.plugin-shell .list-workspace .maintenance-action-bar small { display: inline; margin: 0; }
+.plugin-shell .list-workspace .maintenance-status { min-height: 34px; padding: 6px 10px; margin-bottom: 8px; }
+.plugin-shell .list-workspace .maintenance-status > div:nth-child(2) { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+.plugin-shell .list-workspace .maintenance-status p { margin: 0; line-height: 1.5; }
+.plugin-shell .list-workspace .maintenance-detail { margin-top: 6px; }
+.plugin-shell .list-workspace .maintenance-detail summary { min-height: 24px; padding: 3px 0; }
+.plugin-shell .list-workspace .maintenance-report-detail { max-height: 160px; overflow: auto; }
+.plugin-shell .list-workspace .maintenance-result-counts { margin: 0 0 6px; }
+.plugin-shell .list-workspace .uninstall-review { padding: 10px 12px; }
+.plugin-shell .list-workspace:has(.uninstall-review) .application-library { flex: 0 0 292px; }
+.plugin-shell .list-workspace .review-file-list { max-height: 192px; overscroll-behavior: auto; }
+.plugin-shell .list-workspace .review-file-row { min-height: 34px; padding: 8px 10px; }
+.plugin-shell .history-actions { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
+.plugin-shell .history-actions .segmented button { min-height: 28px; padding: 5px 8px; font-size: 11px; }
+.plugin-shell .list-workspace .history-card { min-height: 224px; padding: 0 12px; }
+.plugin-shell .list-workspace .history-row { min-height: 44px; padding: 8px 0; }
+.plugin-shell .list-workspace .history-head { position: sticky; top: 0; z-index: 1; min-height: 30px; background: var(--surface); }
+.plugin-shell .list-workspace .scan-controls { flex-shrink: 0; padding: 8px 10px; margin-bottom: 8px; }
+.plugin-shell .list-workspace .scan-controls form { gap: 6px; }
+.plugin-shell .list-workspace .scan-controls select { min-width: 0; max-width: 100px; min-height: 30px; padding: 5px 8px; border: 1px solid var(--line-strong); border-radius: 7px; color: var(--text-secondary); background: var(--surface); font-size: 11px; }
+.plugin-shell .list-workspace .scan-controls :is(.primary, .secondary) { min-height: 30px; padding: 5px 10px; font-size: 11px; }
+.plugin-shell .list-workspace .path-input input { padding: 5px 0; font-size: 11px; }
+.plugin-shell .list-workspace .task-summary { margin: 0 0 8px; padding: 6px 10px; }
+.plugin-shell .list-workspace .scan-results { padding: 8px 10px; }
+.plugin-shell .list-workspace .scan-results > :not(.file-list) { flex-shrink: 0; }
+.plugin-shell .list-workspace .scan-results .section-heading { min-height: 24px; margin-bottom: 4px; }
+.plugin-shell .list-workspace .scan-results .section-heading > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+.plugin-shell .list-workspace .scan-results .section-heading p { margin: 0; font-size: 10px; }
+.plugin-shell .list-workspace .disk-breadcrumbs { overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
+.plugin-shell .list-workspace .list-filter { min-height: 30px; margin: 0 0 6px; padding: 4px 8px; }
+.plugin-shell .list-workspace .file-list { flex: 1; height: 0; min-height: 160px; contain: size; overflow: auto; overscroll-behavior: auto; scrollbar-width: thin; }
+.plugin-shell .list-workspace .file-row { min-height: 32px; padding: 7px 2px; }
+.plugin-shell .list-workspace .file-head { position: sticky; top: 0; z-index: 1; min-height: 28px; background: var(--surface); }
+.plugin-shell .scan-extras { display: flex; gap: 12px; padding-top: 5px; border-top: 1px solid var(--line); }
+.plugin-shell .scan-extras > details { flex: 1; min-width: 0; margin: 0; scroll-margin-block: 8px; }
+.plugin-shell .scan-extras summary { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 24px; color: var(--text-secondary); font-size: 11px; }
+.plugin-shell .scan-extras .scan-treemap { max-height: 120px; overflow: auto; }
+.plugin-shell .scan-extras .scan-treemap button { min-height: 64px; padding: 8px; }
+.plugin-shell .scan-extras .large-file-list { display: block; max-height: 160px; overflow: auto; padding: 0; border: 0; }
+.plugin-shell .large-file-list > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 10px; }
+.plugin-shell .large-file-list > div > span { display: flex; align-items: center; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.plugin-shell .large-file-list strong { flex-shrink: 0; font-weight: 500; }
+
+@media (max-height: 620px) and (min-width: 681px) {
+  .plugin-shell:has(.list-workspace) .topbar { height: 40px; min-height: 40px; }
+  .plugin-shell:has(.list-workspace) .top-nav { padding-bottom: 6px; }
+  .plugin-shell:has(.list-workspace) .top-nav-item { min-height: 32px; }
+}
+
+@media (max-width: 680px) {
+  .plugin-shell .list-workspace .page-heading > div:not(.maintenance-title, .history-actions), .plugin-shell .list-workspace .maintenance-title > div { gap: 2px 8px; }
+  .plugin-shell .list-workspace .page-heading p { font-size: 10px; }
+  .selection-names { max-width: 140px; }
+  .plugin-shell .history-actions { flex-wrap: wrap; justify-content: flex-end; }
+}
+
+@media (max-width: 480px) {
+  .plugin-shell .page-content:has(> .list-workspace) { padding: 10px 12px; }
+  .plugin-shell .list-workspace :is(.app-selection-bar, .maintenance-action-bar) { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .plugin-shell .list-workspace :is(.app-selection-bar, .maintenance-action-bar) > .primary { width: auto; margin-left: auto; }
+  .plugin-shell .list-workspace .selection-summary { gap: 6px; }
+  .plugin-shell .selection-names { max-width: 90px; }
+  .plugin-shell .history-page .page-heading { flex-wrap: wrap; }
+  .plugin-shell .history-actions { width: 100%; justify-content: space-between; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .plugin-shell *, .plugin-shell *::before, .plugin-shell *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
   .plugin-shell :is(button, a), .plugin-shell dialog.confirm-dialog[open] { transition: opacity 120ms ease, color 120ms ease, background-color 120ms ease !important; }

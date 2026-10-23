@@ -7,7 +7,7 @@ const path = require('node:path');
 const { createMaintenanceController, parseCleanPreview, resolveMoleScript, safeText, sizeBytes } = require('../maintenance.js');
 
 function harness(t, operation = 'installer') {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mole-maintenance-test-'));
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'mole-maintenance-test-')));
   fs.mkdirSync(path.join(root, 'bin'));
   fs.mkdirSync(path.join(root, 'lib', 'clean'), { recursive: true });
   fs.writeFileSync(path.join(root, 'mo'), '# fixture entry');
@@ -15,8 +15,8 @@ function harness(t, operation = 'installer') {
   fs.writeFileSync(path.join(root, 'bin', 'clean.sh'), 'CLEAN_PREVIEW_FINAL_FILE= ensure_sudo_session_with_password BASH_SOURCE[0] main()');
   fs.writeFileSync(path.join(root, 'bin', 'optimize.sh'), '--dry-run MOLE_DRY_RUN show_optimization_summary main()');
   fs.writeFileSync(path.join(root, 'bin', 'purge.sh'), 'MOLE_SKIP_MAIN clean_project_artifacts main()');
-  fs.writeFileSync(path.join(root, 'lib', 'clean', 'project.sh'), 'select_purge_categories confirm_purge_cleanup item_expected_parent_ids item_expected_target_ids item_paths item_sizes');
-  const environment = { moPath: path.join(root, 'mo'), moVersion: '1.61.0' };
+  fs.writeFileSync(path.join(root, 'lib', 'clean', 'project.sh'), 'select_purge_categories confirm_purge_cleanup item_expected_parent_ids item_expected_target_ids item_paths item_sizes PURGE_SEARCH_PATHS');
+  const environment = { moPath: path.join(root, 'mo'), moVersion: '1.61.0', home: root };
   const tasks = new Map(), runtimes = new Map(), logs = [], children = [], killed = [];
   const controller = createMaintenanceController({
     tasks, runtimes, getEnvironment: () => environment, childEnv: extra => extra, emitTask: () => {},
@@ -42,7 +42,7 @@ function harness(t, operation = 'installer') {
   });
   let next = 0;
   function start(mode = 'preview', extra = {}) {
-    const request = { operation, mode, ...extra };
+    const request = { operation, mode, ...(operation === 'purge' && mode === 'preview' ? { path: root } : {}), ...extra };
     const context = controller.prepare(request);
     const task = { id: `task-${++next}`, operation, mode, state: 'running', createdAt: new Date().toISOString(), startedAt: new Date().toISOString(), endedAt: null, error: '' };
     tasks.set(task.id, task);
@@ -224,6 +224,47 @@ test('partial file results distinguish removed files from retained files', t => 
   assert.deepEqual(execution.task.maintenance.summary, { selectedCount: 2, completedCount: 1, failedCount: 1 });
   assert.equal(execution.task.maintenance.items[0].status, 'removed');
   assert.equal(execution.task.maintenance.items[1].status, 'skipped');
+});
+
+test('project cleanup requires an existing directory and resolves home aliases and symlinks', t => {
+  const h = harness(t, 'purge');
+  for (const target of [undefined, '/', 'relative/project', path.join(h.root, 'missing'), h.environment.moPath, `${h.root}/bad\npath`]) {
+    assert.throws(() => h.controller.prepare({ operation: 'purge', mode: 'preview', path: target }), /项目目录|绝对路径|控制字符/);
+  }
+  const project = path.join(h.root, 'project');
+  fs.mkdirSync(project);
+  fs.symlinkSync(project, path.join(h.root, 'project-link'));
+  const context = h.controller.prepare({ operation: 'purge', mode: 'preview', path: '~/project-link' });
+  assert.equal(context.scanPath, project);
+  assert.equal(h.children.length, 0);
+  assert(h.logs.some(log => log.event === 'maintenance.scan_path_failed' && log.requestId && log.stack));
+});
+
+test('project cleanup execution keeps the reviewed directory despite a different request path', t => {
+  const h = harness(t, 'purge');
+  const project = path.join(h.root, 'project "β" $(false)');
+  fs.mkdirSync(project);
+  const preview = h.start('preview', { path: project });
+  h.item(preview, 0, path.join(project, 'node_modules'));
+  preview.event('inventory', '1', 'complete');
+  preview.close();
+  assert.equal(preview.task.path, project);
+  assert.equal(preview.task.maintenance.phase, 'reviewed');
+  const execution = h.start('execute', { previewTaskId: preview.task.id, itemIds: [preview.task.maintenance.items[0].id], path: h.root });
+  assert.equal(execution.task.path, project);
+  assert.equal(execution.child.args.at(-1), project);
+  assert(h.logs.some(log => log.event === 'maintenance.request_validated' && log.requestId === execution.runtime.context.requestId && log.scanPath === project));
+  execution.close(1);
+});
+
+test('project cleanup rejects native inventory entries outside the selected directory', t => {
+  const h = harness(t, 'purge');
+  const preview = h.start();
+  h.item(preview, 0, path.join(path.dirname(h.root), 'outside-project', 'node_modules'));
+  preview.close();
+  assert.equal(preview.task.maintenance.phase, 'failed');
+  assert.match(preview.task.error, /超出所选目录/);
+  assert.equal(preview.task.maintenance.items.length, 0);
 });
 
 test('empty purge results succeed only with an explicit no-candidates result', t => {

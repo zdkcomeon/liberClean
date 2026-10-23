@@ -27,15 +27,19 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [password, setPassword] = useState('');
+  const [projectPath, setProjectPath] = useState(task?.path || '');
   const dialog = useRef<HTMLDialogElement>(null);
   const reviewTrigger = useRef<HTMLButtonElement>(null);
   const passwordInput = useRef<HTMLInputElement>(null);
   const flow = task?.maintenance;
   const items = flow?.items || emptyItems;
   const running = isActive(task);
-  const fileMode = operation === 'purge' || operation === 'installer';
+  const projectMode = operation === 'purge';
+  const scopeChanged = projectMode && !!task && projectPath.trim() !== task.path;
+  const fileMode = projectMode || operation === 'installer';
   const compatible = typeof mole?.maintenanceAction === 'function';
-  const reviewed = task?.mode === 'preview' && task.state === 'succeeded' && flow?.phase === 'reviewed';
+  const previewReady = task?.mode === 'preview' && task.state === 'succeeded' && flow?.phase === 'reviewed';
+  const reviewed = previewReady && !scopeChanged;
   const canSelect = reviewed && ready && !busy && !submitting;
   const groups = useMemo(() => [...new Set(items.map(item => item.group).filter(Boolean))], [items]);
   const filtered = useMemo(() => items.filter(item => (group === 'all' || item.group === group) && `${item.title} ${item.path} ${item.group}`.toLowerCase().includes(query.trim().toLowerCase())), [items, group, query]);
@@ -51,6 +55,7 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
   const stage = reviewed || waitingConfirmation ? 2 : task?.mode === 'execute' ? running ? 2 : 3 : 1;
 
   useEffect(() => { setSelected(new Set()); setError(''); setQuery(''); setGroup('all'); }, [task?.id]);
+  useEffect(() => { if (projectMode && task?.path) setProjectPath(task.path); }, [projectMode, task?.id, task?.path]);
   useEffect(() => { setVisibleCount(200); }, [query, group, task?.id]);
   useEffect(() => { if (waitingConfirmation) setReviewOpen(true); else setReviewOpen(false); }, [waitingConfirmation, flow?.promptToken]);
   useEffect(() => {
@@ -78,7 +83,13 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
 
   function inspect() {
     setError('');
-    onStart({ operation, mode: 'preview' });
+    if (projectMode && !projectPath.trim()) { setError('请先选择或输入项目目录'); return; }
+    onStart({ operation, mode: 'preview', ...(projectMode ? { path: projectPath.trim() } : {}) });
+  }
+
+  function chooseProjectDirectory() {
+    const picked = mole?.pickDirectory();
+    if (picked) { setProjectPath(picked); setSelected(new Set()); setError(''); }
   }
 
   function execute() {
@@ -99,19 +110,23 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
     finally { setSubmitting(false); }
   }
 
-  const inspectButton = <button className={task ? 'secondary' : 'primary'} onClick={inspect} disabled={!ready || !compatible || running || busy || submitting}><RefreshCw size={14} className={running && task?.mode === 'preview' ? 'spin' : ''} />{task ? '重新检查' : '开始检查'}</button>;
+  const inspectButton = <button className={task ? 'secondary' : 'primary'} onClick={inspect} disabled={!ready || !compatible || running || busy || submitting || projectMode && !projectPath.trim()}><RefreshCw size={14} className={running && task?.mode === 'preview' ? 'spin' : ''} />{task ? '重新检查' : projectMode ? '检查所选目录' : '开始检查'}</button>;
 
   return <div className="maintenance-page list-workspace">
     <div className="list-workspace-body">
       <div className="page-heading maintenance-heading">
-        <div className="maintenance-title"><span className={`maintenance-icon ${tool.color}`}><tool.icon size={21} /></span><div><h1>{operation === 'optimize' ? '检查系统维护项目' : fileMode ? '选择需要清理的内容' : '检查可清理的文件'}</h1><p>{tool.description}</p></div></div>
+        <div className="maintenance-title"><span className={`maintenance-icon ${tool.color}`}><tool.icon size={21} /></span><div><h1>{projectMode ? '项目清理' : operation === 'optimize' ? '检查系统维护项目' : fileMode ? '选择需要清理的内容' : '检查可清理的文件'}</h1>{projectMode && previewReady ? <span className={`state-badge ${scopeChanged ? 'state-interrupted' : 'state-succeeded'}`} role="status" title={flow?.message}>{scopeChanged ? '目录已更改，请重新检查' : `已检查 ${items.length} 项`}</span> : <p>{tool.description}</p>}</div></div>
         {task && inspectButton}
       </div>
+      {projectMode && <form className="project-scope" onSubmit={event => { event.preventDefault(); if (ready && compatible && !running && !busy && !submitting) inspect(); }}>
+        <label className="path-input"><Folder size={15} /><span className="sr-only">项目目录</span><input aria-label="项目目录" value={projectPath} onChange={event => { setProjectPath(event.target.value); setSelected(new Set()); }} disabled={running || busy || submitting} placeholder="项目目录或上级目录，如 ~/devProjects" required /></label>
+        <button type="button" className="secondary compact" onClick={chooseProjectDirectory} disabled={!ready || running || busy || submitting}><Folder size={14} />选择目录</button>
+      </form>}
       {!flow && <div className="maintenance-stepbar"><div className="operation-steps" aria-label="操作步骤"><span aria-current={stage === 1 ? 'step' : undefined}><i>1</i>检查</span><ChevronDown size={12} /><span aria-current={stage === 2 ? 'step' : undefined}><i>2</i>{fileMode ? '选择并确认' : '确认执行'}</span><ChevronDown size={12} /><span aria-current={stage === 3 ? 'step' : undefined}><i>3</i>查看结果</span></div><span><ShieldCheck size={12} /> 检查不会修改文件</span></div>}
       {!compatible && <div className="notice warning" role="status"><AlertCircle size={15} /><span>图形交互组件需要更新，请重新加载插件后再试。</span></div>}
       {error && <div className="notice warning" role="alert"><AlertCircle size={15} /><div>{error}</div><button aria-label="关闭维护错误" onClick={() => setError('')}><X size={14} /></button></div>}
       {busy && <div className="notice" role="status"><Info size={15} /><span>其他维护任务正在运行，请先完成或停止当前任务。</span></div>}
-      {flow && <section className={`maintenance-status ${warning ? 'warning' : completed || reviewed ? 'success' : ''}`} role="status">
+      {flow && !(projectMode && previewReady) && <section className={`maintenance-status ${warning ? 'warning' : completed || reviewed ? 'success' : ''}`} role="status">
         <div className="maintenance-status-icon">{running ? <Loader2 size={20} className="spin" /> : warning ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}</div>
         <div><strong>{flow.phase === 'authorizing' ? '需要管理员权限' : waitingConfirmation ? '等待确认本次操作' : running ? task?.mode === 'preview' ? '正在检查' : '正在处理' : reviewed ? '检查完成' : flow.phase === 'cancelled' ? '操作已停止' : warning ? '请检查处理结果' : '处理完成'}</strong><p>{flow.message}</p></div>
         {task && <span className="maintenance-elapsed"><Clock3 size={12} />{duration(task, now)}</span>}
@@ -138,9 +153,9 @@ export function MaintenancePage({ operation, tool, task, home, ready, busy, now,
             <span className={`maintenance-item-state ${item.status}`}>{item.status === 'removed' ? <><Check size={12} />已清理</> : item.status === 'skipped' ? '仍保留' : item.size != null ? bytes(item.size) : operation === 'optimize' ? '已检查' : '未测量'}</span>
           </div>)}
           {filtered.length > visibleCount && <button className="maintenance-load-more" onClick={() => setVisibleCount(value => value + 200)}>显示更多项目（还有 {filtered.length - visibleCount} 项）</button>}
-          {!filtered.length && <div className="maintenance-list-empty">{running ? <><Loader2 size={24} className="spin" /><strong>{fileMode ? '正在查找文件' : '正在读取检查结果'}</strong><p>检查可能需要一些时间，完成后会在这里显示清单。</p></> : <><Search size={24} /><strong>{query || group !== 'all' ? '没有匹配的项目' : '没有需要处理的项目'}</strong>{(query || group !== 'all') && <button className="text-button" onClick={() => { setQuery(''); setGroup('all'); }}>清除筛选条件</button>}</>}</div>}
+          {!filtered.length && <div className="maintenance-list-empty">{running ? <><Loader2 size={24} className="spin" /><strong>{fileMode ? '正在查找文件' : '正在读取检查结果'}</strong><p>检查可能需要一些时间，完成后会在这里显示清单。</p></> : <><Search size={24} /><strong>{scopeChanged ? '目录已更改，请重新检查' : query || group !== 'all' ? '没有匹配的项目' : projectMode ? '所选目录没有符合清理规则的项目' : '没有需要处理的项目'}</strong>{projectMode && !query && group === 'all' && <p>可以改选项目的上级目录重试；这里只列出 Mole 支持清理的依赖目录与构建产物。</p>}{(query || group !== 'all') && <button className="text-button" onClick={() => { setQuery(''); setGroup('all'); }}>清除筛选条件</button>}</>}</div>}
         </div>
-      </section> : <section className="card maintenance-empty">{task ? <span className={`maintenance-empty-icon ${tool.color}`}><tool.icon size={30} strokeWidth={1.4} /></span> : inspectButton}<h2>{operation === 'optimize' ? '先检查系统维护项目' : '先检查，再决定处理哪些内容'}</h2><p>{fileMode ? '检查完成后，勾选需要清理的文件，核对清单后再确认。' : '先查看检查清单，确认后由 Mole 按当前规则执行维护。'}</p><span><ShieldCheck size={13} /> 本机检查 <i /> 确认后执行</span></section>}
+      </section> : <section className="card maintenance-empty">{task ? <span className={`maintenance-empty-icon ${tool.color}`}><tool.icon size={30} strokeWidth={1.4} /></span> : inspectButton}<h2>{projectMode ? '先选择项目目录，再检查' : operation === 'optimize' ? '先检查系统维护项目' : '先检查，再决定处理哪些内容'}</h2><p>{projectMode ? '可选择单个项目或项目的上级目录，检查 node_modules、target、dist 等依赖与构建产物。检查不会删除文件。' : fileMode ? '检查完成后，勾选需要清理的文件，核对清单后再确认。' : '先查看检查清单，确认后由 Mole 按当前规则执行维护。'}</p><span><ShieldCheck size={13} /> 本机检查 <i /> 确认后执行</span></section>}
       {!!flow && (flow.steps.length > 0 || flow.messages.length > 0) && <details className="maintenance-detail" open={running && !fileMode && !items.length}><summary><span><Info size={13} />处理步骤与说明 <small>{flow.steps.length} 个步骤</small></span><ChevronDown size={13} /></summary><div className="maintenance-report-detail"><div className="maintenance-progress-steps">{flow.steps.map(step => <div key={step.id}>{step.status === 'running' ? <Loader2 size={14} className="spin" /> : step.status === 'warning' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}<span><strong>{step.title}</strong>{step.detail && <small>{step.detail}</small>}</span></div>)}</div><div className="maintenance-messages">{flow.messages.map(message => <p key={message.id} className={message.tone}>{message.text}</p>)}</div></div></details>}
     </div>
     {flow && <div className="maintenance-action-bar">

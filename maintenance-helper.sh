@@ -9,6 +9,7 @@ gui_operation="$2"
 gui_mode="$3"
 gui_token="$4"
 gui_preview_file="$5"
+gui_purge_path="${6:-}"
 [[ "$gui_token" =~ ^[a-f0-9-]{36}$ ]] || exit 64
 [[ "$gui_mode" == preview || "$gui_mode" == execute ]] || exit 64
 case "$gui_operation" in clean | optimize | purge | installer) ;; *) exit 64 ;; esac
@@ -180,6 +181,10 @@ case "$gui_operation" in
         source "$native_script"
         unset MOLE_SKIP_MAIN
         declare -F clean_project_artifacts > /dev/null
+        [[ -n "$gui_purge_path" && "$gui_purge_path" == /* && -d "$gui_purge_path" ]] || exit 66
+        # Scope this run without changing Mole's saved search directories.
+        PURGE_SEARCH_PATHS=("$gui_purge_path")
+        PURGE_DISCOVERY_STATUS=0
         select_purge_categories() {
             local i count=${#item_paths[@]}
             for ((i = 0; i < count; i++)); do

@@ -45,6 +45,24 @@ function safeText(value) {
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').trim().slice(0, 2000);
 }
 
+function resolvePurgePath(value, home) {
+  let target = typeof value === 'string' ? value.trim() : '';
+  if (!target) throw new Error('请选择要检查的项目目录');
+  if (/[\x00-\x1f\x7f]/.test(target)) throw new Error('项目目录不能包含控制字符');
+  if (target === '~') target = home;
+  else if (target.startsWith('~/')) target = path.join(home, target.slice(2));
+  if (!path.isAbsolute(target)) throw new Error('请输入项目目录的绝对路径，或使用 ~/ 开头的路径');
+  let resolved;
+  try {
+    resolved = fs.realpathSync(target);
+    if (!fs.statSync(resolved).isDirectory()) throw new Error('not a directory');
+  } catch {
+    throw new Error('无法访问项目目录，请检查路径与权限');
+  }
+  if (resolved === path.parse(resolved).root) throw new Error('请选择项目目录或项目的上级目录，不能选择磁盘根目录');
+  return resolved;
+}
+
 function parseCleanPreview(text, home) {
   if (!text.startsWith('# Mole Cleanup Preview')) throw new Error('没有取得完整的 Mole 清理清单，请重新检查');
   let group = '清理项目';
@@ -86,7 +104,7 @@ function resolveMoleScript(environment, operation) {
   if (required.some(token => !source.includes(token))) throw new Error('当前 Mole 版本的交互方式暂不兼容，请更新 Mole 后重新检查');
   if (operation === 'purge') {
     const library = fs.readFileSync(path.join(path.dirname(script), '..', 'lib', 'clean', 'project.sh'), 'utf8');
-    if (['select_purge_categories', 'confirm_purge_cleanup', 'item_expected_parent_ids', 'item_expected_target_ids', 'item_paths', 'item_sizes'].some(token => !library.includes(token))) {
+    if (['select_purge_categories', 'confirm_purge_cleanup', 'item_expected_parent_ids', 'item_expected_target_ids', 'item_paths', 'item_sizes', 'PURGE_SEARCH_PATHS'].some(token => !library.includes(token))) {
       throw new Error('当前 Mole 的项目检查组件暂不兼容，请更新 Mole 后重试');
     }
   }
@@ -99,19 +117,22 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
   const helper = path.join(__dirname, 'maintenance-helper.sh');
   const update = (task, patch) => { task.maintenance = { ...task.maintenance, ...patch }; emitTask(task); };
   const elapsed = runtime => Date.now() - runtime.started;
-  const log = (task, runtime, event, fields = {}) => logEvent(`maintenance.${event}`, { id: task.id, operation: task.operation, mode: task.mode, step: runtime.stage, elapsedMs: elapsed(runtime), ...fields });
+  const log = (task, runtime, event, fields = {}) => logEvent(`maintenance.${event}`, { id: task.id, requestId: runtime.context.requestId, operation: task.operation, mode: task.mode, scanPath: safeText(runtime.context.scanPath), step: runtime.stage, elapsedMs: elapsed(runtime), ...fields });
 
   function prepare(request) {
+    const started = Date.now();
+    const requestId = crypto.randomUUID();
+    logEvent('maintenance.request_received', { requestId, operation: request.operation, mode: request.mode, path: safeText(request.path), previewTaskId: request.previewTaskId || '', itemCount: Array.isArray(request.itemIds) ? request.itemIds.length : 0 });
     const environment = getEnvironment();
     const native = resolveMoleScript(environment, request.operation);
-    const context = { ...native, selected: [], sourceTaskId: '', fileMode: FILE_OPERATIONS.has(request.operation) };
-    logEvent('maintenance.request_received', { operation: request.operation, mode: request.mode, previewTaskId: request.previewTaskId || '', itemCount: Array.isArray(request.itemIds) ? request.itemIds.length : 0 });
+    const context = { ...native, requestId, scanPath: '', selected: [], sourceTaskId: '', fileMode: FILE_OPERATIONS.has(request.operation) };
     if (request.mode === 'execute') {
       const previous = tasks.get(request.previewTaskId);
       const plan = plans.get(request.previewTaskId);
       if (!previous || previous.operation !== request.operation || previous.mode !== 'preview' || previous.state !== 'succeeded' || previous.maintenance?.phase !== 'reviewed' || !plan) throw new Error('请先完成当前工具的检查，再选择需要处理的项目');
       if (Date.now() - plan.createdAt > PREVIEW_TTL || plan.signature !== native.signature) throw new Error('检查结果已过期或 Mole 已更新，请重新检查');
       context.sourceTaskId = previous.id;
+      context.scanPath = plan.scanPath || '';
       if (context.fileMode) {
         if (!Array.isArray(request.itemIds) || request.itemIds.length === 0 || request.itemIds.length > MAX_ITEMS || request.itemIds.some(id => typeof id !== 'string') || new Set(request.itemIds).size !== request.itemIds.length) throw new Error('请选择有效的清理项目');
         context.selected = request.itemIds.map(id => {
@@ -121,7 +142,18 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
         });
       } else context.selected = plan.items;
     }
-    logEvent('maintenance.request_validated', { operation: request.operation, mode: request.mode, previewTaskId: context.sourceTaskId, selectedCount: context.selected.length, target: native.script });
+    if (request.operation === 'purge') {
+      const requestedPath = request.mode === 'execute' ? context.scanPath : request.path;
+      try {
+        const resolved = resolvePurgePath(requestedPath, environment.home || os.homedir());
+        if (request.mode === 'execute' && resolved !== context.scanPath) throw new Error('检查目录已变化，请重新检查');
+        context.scanPath = resolved;
+      } catch (error) {
+        logEvent('maintenance.scan_path_failed', { requestId, operation: request.operation, mode: request.mode, target: native.script, path: safeText(requestedPath), elapsedMs: Date.now() - started, message: safeText(error.message), stack: safeText(error.stack) });
+        throw error;
+      }
+    }
+    logEvent('maintenance.request_validated', { requestId, operation: request.operation, mode: request.mode, previewTaskId: context.sourceTaskId, scanPath: safeText(context.scanPath), selectedCount: context.selected.length, target: native.script, elapsedMs: Date.now() - started });
     return context;
   }
 
@@ -136,6 +168,7 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
   }
 
   function start(task, context) {
+    if (task.operation === 'purge') task.path = context.scanPath;
     for (const id of plans.keys()) if (!tasks.has(id)) plans.delete(id);
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mole-gui-'));
     fs.chmodSync(directory, 0o700);
@@ -145,11 +178,11 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
     emitTask(task);
     const wrapper = [
       'exec 3< <(cat)',
-      '/usr/bin/script -q /dev/null /bin/bash "$1" "$2" "$3" "$4" "$5" "$6" <&3',
+      '/usr/bin/script -q /dev/null /bin/bash "$1" "$2" "$3" "$4" "$5" "$6" "$7" <&3',
       'code=$?', 'printf \'%s\' "$code" > "$MOLE_EXIT_FILE"', 'kill 0'
     ].join('; ');
     try {
-      runtime.child = spawnProcess('/bin/bash', ['-c', wrapper, 'bash', helper, context.script, task.operation, task.mode, runtime.token, runtime.previewFile], {
+      runtime.child = spawnProcess('/bin/bash', ['-c', wrapper, 'bash', helper, context.script, task.operation, task.mode, runtime.token, runtime.previewFile, context.scanPath], {
         cwd: path.dirname(directory), env: childEnv({ MOLE_EXIT_FILE: runtime.exitFile, MOLE_TEST_MODE: '0', MOLE_TEST_NO_AUTH: '0', MOLE_PURGE_YES: '0', MO_DEBUG: '0', BASH_ENV: '', ENV: '' }), detached: true, stdio: ['pipe', 'pipe', 'pipe']
       });
     } catch (error) { complete(task, runtime, 1, null, error.message); return; }
@@ -239,6 +272,10 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
       if (runtime.inventoryReady || runtime.items.length >= MAX_ITEMS || !runtime.context.fileMode) throw new Error('unexpected item');
       const [index, target, size, group, detail, identity, selectable] = values;
       if (!/^\d+$/.test(index) || Number(index) !== runtime.items.length || !path.isAbsolute(target) || target === '/' || /[\x00-\x1f\x7f]/.test(target) || (size && (!/^\d+$/.test(size) || !Number.isSafeInteger(Number(size))))) throw new Error('invalid item');
+      if (task.operation === 'purge') {
+        const relative = path.relative(runtime.context.scanPath, target);
+        if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) throw new Error('项目检查结果超出所选目录，请重新检查');
+      }
       const previous = runtime.context.selected.find(item => item.path === target);
       runtime.items.push({ id: previous?.id || crypto.randomUUID(), index: Number(index), title: task.operation === 'purge' ? `${path.basename(path.dirname(target))} / ${path.basename(target)}` : path.basename(target), path: target, size: size ? Number(size) : null, group: safeText(group), detail: safeText(detail), identity, selectable: selectable === 'true' && !!identity, status: 'ready' });
       log(task, runtime, 'item_loaded', { target, size: size || null, selectable: selectable === 'true' });
@@ -347,7 +384,7 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
           flow.items = runtime.steps.map(step => ({ id: step.id, title: step.title, path: '', group: '系统优化', size: null, detail: step.detail, selectable: false, status: 'ready' }));
         }
         flow.phase = 'reviewed'; flow.outcome = 'preview'; flow.message = flow.items.length ? '检查完成，本次没有修改文件或系统设置' : '检查完成，没有发现需要处理的项目';
-        plans.set(task.id, { signature: runtime.context.signature, createdAt: Date.now(), items: runtime.context.fileMode ? runtime.items : flow.items });
+        plans.set(task.id, { signature: runtime.context.signature, scanPath: runtime.context.scanPath, createdAt: Date.now(), items: runtime.context.fileMode ? runtime.items : flow.items });
         log(task, runtime, 'preview_saved', { count: flow.items.length, scanStatus: flow.scanStatus });
       } catch (error) { problem = error.message; flow.phase = 'failed'; flow.outcome = 'failed'; flow.message = problem; }
     } else if (!runtime.confirmed) {

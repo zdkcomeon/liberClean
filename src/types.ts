@@ -206,6 +206,7 @@ export interface Task {
   endedAt: string | null;
   exitCode: number | null;
   error: string;
+  /** Absolute directory used by directory analysis or project cleanup; absent for other operations. */
   path?: string;
   result?: ScanReport;
   apps?: InstalledApp[];
@@ -216,6 +217,7 @@ export interface Task {
 export interface StartTaskRequest {
   operation: Operation;
   mode: 'scan' | 'preview' | 'execute';
+  /** Required for analysis and project-cleanup previews; accepts an absolute path or ~/. Cleanup execution retains its preview's directory. */
   path?: string;
   appIds?: string[];
   /** Completed preview task whose server-owned items are being executed; required for maintenance execution. */

@@ -48,12 +48,12 @@ export function createPreviewBridge(): MoleBridge {
   };
   const finish = (task: Task) => publish({ ...task, state: 'succeeded', endedAt: new Date().toISOString(), exitCode: 0 });
 
-  function itemsFor(operation: StartTaskRequest['operation']): MaintenanceItem[] {
+  function itemsFor(operation: StartTaskRequest['operation'], projectRoot = `${home}/Projects`): MaintenanceItem[] {
     if (scenario === 'empty') return [];
     const entries = operation === 'optimize'
       ? [['刷新 DNS 缓存', '', '网络服务', '刷新本机 DNS 解析缓存'], ['刷新 Finder 服务', '', '系统服务', '更新文件管理器缓存'], ['重建启动服务索引', '', '系统服务', '检查应用与文件的关联关系']]
       : operation === 'purge'
-        ? [['node_modules', `${home}/Projects/website/node_modules`, '依赖目录', '上次修改于 90 天前'], ['.next', `${home}/Projects/dashboard/.next`, '构建产物', '可通过重新构建生成'], ['target', `${home}/Projects/order-service/target`, '构建产物', '可通过重新构建生成'], ['node_modules', `${home}/Projects/design-system/node_modules`, '依赖目录', '上次修改于 120 天前']]
+        ? [['node_modules', `${projectRoot}/website/node_modules`, '依赖目录', '上次修改于 90 天前'], ['.next', `${projectRoot}/dashboard/.next`, '构建产物', '可通过重新构建生成'], ['target', `${projectRoot}/order-service/target`, '构建产物', '可通过重新构建生成'], ['node_modules', `${projectRoot}/design-system/node_modules`, '依赖目录', '上次修改于 120 天前']]
         : operation === 'installer'
           ? [['Figma.dmg', `${home}/Downloads/Figma.dmg`, '磁盘映像', '已下载的安装文件'], ['Notion.dmg', `${home}/Downloads/Notion.dmg`, '磁盘映像', '已下载的安装文件'], ['Developer Tools Installer — macOS Apple Silicon Universal.pkg', `${home}/Downloads/Developer Tools Installer — macOS Apple Silicon Universal.pkg`, '安装包', '已下载的安装文件']]
           : [['应用缓存', `${home}/Library/Caches`, '缓存', '应用运行时生成的临时缓存'], ['系统日志', `${home}/Library/Logs`, '日志', '应用与系统的诊断记录'], ['浏览器缓存', `${home}/Library/Caches/Browser`, '缓存', '浏览器生成的缓存文件'], ['临时文件', `${home}/Library/TemporaryItems`, '临时文件', '不再使用的临时内容']];
@@ -69,7 +69,11 @@ export function createPreviewBridge(): MoleBridge {
       task.uninstall = { phase: 'preparing', files: [], notices: [], message: '正在生成示例检查清单…' };
     } else {
       const previous = tasks.find(item => item.id === request.previewTaskId);
-      const items = request.mode === 'execute' ? previous?.maintenance?.items.filter(item => !request.itemIds || request.itemIds.includes(item.id)) || [] : itemsFor(request.operation);
+      if (request.operation === 'purge') {
+        task.path = request.mode === 'execute' ? previous?.path : request.path?.trim().replace(/^~(?=\/|$)/, home);
+        if (!task.path) throw new Error('请先选择项目目录');
+      }
+      const items = request.mode === 'execute' ? previous?.maintenance?.items.filter(item => !request.itemIds || request.itemIds.includes(item.id)) || [] : itemsFor(request.operation, task.path);
       task.maintenance = { phase: 'preparing', kind: ['purge', 'installer'].includes(request.operation) ? 'files' : 'batch', items, steps: [], messages: [], selectedIds: request.itemIds || [], previewTaskId: request.previewTaskId || '', scanStatus: scenario === 'partial' ? 'partial' : 'complete', message: '正在生成示例检查清单…' };
     }
     publish(task);

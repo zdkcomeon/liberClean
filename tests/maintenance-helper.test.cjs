@@ -45,7 +45,9 @@ main() {
 if [[ "\${MOLE_SKIP_MAIN:-0}" == 1 ]]; then return 0; fi
 main "$@"
 `;
-const projectFixture = `clean_project_artifacts() {
+const projectFixture = `PURGE_SEARCH_PATHS=("/outside-fixture-scope")
+clean_project_artifacts() {
+  [[ "\${PURGE_SEARCH_PATHS[0]}" == "$MOLE_GUI_FIXTURE_DIR" ]] || return 65
   local -a item_paths=("$MOLE_GUI_FIXTURE_DIR/a \\\"β\\\" \\\\ sample.dmg" "$MOLE_GUI_FIXTURE_DIR/keep.dmg")
   local -a item_sizes=(4 4) item_size_unknown_flags=(false false)
   local -a item_project_paths=(project-a project-b) item_age_labels=('30 days' '30 days') item_cloud_flags=(false false)
@@ -98,7 +100,7 @@ main "$@"
 
 for (const operation of ['installer', 'purge', 'clean', 'optimize']) {
   test(`native helper ${operation}: preview, explicit confirmation and selected execution`, { skip: process.platform !== 'darwin', timeout: 20000 }, async t => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mole-helper-integration-'));
+    const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'mole-helper-integration-')));
     fs.mkdirSync(path.join(root, 'bin')); fs.mkdirSync(path.join(root, 'lib', 'clean'), { recursive: true });
     fs.writeFileSync(path.join(root, 'mo'), '# fixture');
     fs.writeFileSync(path.join(root, 'bin', `${operation}.sh`), { installer: installerFixture, purge: purgeFixture, clean: cleanFixture, optimize: optimizeFixture }[operation]);
@@ -114,7 +116,7 @@ for (const operation of ['installer', 'purge', 'clean', 'optimize']) {
     });
     t.after(() => { for (const runtime of runtimes.values()) { clearInterval(runtime.watchdog); clearTimeout(runtime.killTimer); killGroup(runtime.child); fs.rmSync(runtime.directory, { recursive: true, force: true }); } fs.rmSync(root, { recursive: true, force: true }); });
     function start(mode, extra = {}) {
-      const context = controller.prepare({ operation, mode, ...extra });
+      const context = controller.prepare({ operation, mode, ...(operation === 'purge' && mode === 'preview' ? { path: root } : {}), ...extra });
       const task = { id: crypto.randomUUID(), operation, mode, state: 'running', createdAt: new Date().toISOString(), startedAt: new Date().toISOString() };
       tasks.set(task.id, task); controller.start(task, context); return task;
     }

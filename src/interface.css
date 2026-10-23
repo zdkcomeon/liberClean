@@ -465,6 +465,10 @@ html[data-input-method=keyboard] .plugin-shell :is(button, a, dialog[open]) { tr
 .plugin-shell .list-workspace .page-heading h1 { font-size: 17px; line-height: 1.4; letter-spacing: -.4px; }
 .plugin-shell .list-workspace .page-heading p { margin: 0; font-size: 11px; line-height: 1.5; }
 .plugin-shell .list-workspace .maintenance-title { gap: 8px; }
+.plugin-shell .project-scope { display: flex; flex-shrink: 0; gap: 8px; margin-bottom: 8px; }
+.plugin-shell .project-scope .path-input { flex: 1; min-width: 0; padding: 0 8px; gap: 7px; }
+.plugin-shell .project-scope input { min-width: 0; padding: 6px 0; font-size: 11px; }
+.plugin-shell .project-scope > button { min-height: 32px; white-space: nowrap; }
 .plugin-shell .list-workspace .maintenance-icon { width: 30px; height: 30px; flex-basis: 30px; border-radius: 8px; }
 .plugin-shell .list-workspace :is(.application-library, .maintenance-library, .scan-results, .history-card) { display: flex; flex: 1; flex-direction: column; min-height: min-content; padding: 0; overflow: hidden; border-radius: 9px; }
 .plugin-shell .list-workspace :is(.app-library-controls, .maintenance-filters) { flex-shrink: 0; padding: 8px 10px; gap: 8px; }

@@ -824,6 +824,10 @@ function updateGuidedFlow(task, patch) {
   emitTask(task);
 }
 
+function logGuided(task, runtime, event, fields = {}) {
+  logEvent(`uninstall.${event}`, { id: task.id, mode: task.mode, step: runtime?.stage || 'starting', target: cleanMessage(runtime?.target), elapsedMs: Math.max(0, Date.now() - new Date(task.startedAt).getTime()), ...fields });
+}
+
 function writeGuided(runtime, data) {
   try {
     if (runtime.child && runtime.child.stdin && !runtime.child.stdin.destroyed) runtime.child.stdin.write(data);
@@ -832,11 +836,11 @@ function writeGuided(runtime, data) {
   }
 }
 
-function rejectGuided(task, runtime, message) {
+function rejectGuided(task, runtime, message, error) {
   if (runtime.unsupported) return;
   runtime.unsupported = message;
   updateGuidedFlow(task, { phase: 'failed', message, promptToken: '' });
-  logEvent('uninstall.protocol_rejected', { id: task.id, reason: cleanMessage(message).slice(0, 200) });
+  logGuided(task, runtime, 'protocol_rejected', { reason: cleanMessage(message), response: cleanMessage(stripTerminal(runtime.buffer)), error: cleanMessage((error || new Error(message)).stack) });
   stopTask(task.id);
 }
 
@@ -848,27 +852,32 @@ function parseGuidedOutput(task, runtime) {
     return;
   }
   const text = stripTerminal(runtime.buffer).trim();
-  if (runtime.stage === 'selection' && text.endsWith('Proceed with uninstallation? [y/N]')) {
+  const selectionPrompt = text.endsWith('Proceed with uninstallation? [y/N]');
+  const reviewPrompt = text.endsWith('Enter confirm, ESC cancel:');
+  // Current Mole goes straight to the file review; older versions ask before scanning.
+  if (runtime.stage === 'selection' && (selectionPrompt || reviewPrompt)) {
     const match = MATCHED_COUNT.exec(text);
     if (!match || Number(match[1]) !== task.apps.length) {
       rejectGuided(task, runtime, 'Mole 匹配到的应用数量与当前选择不一致，已停止本次操作');
       return;
     }
     runtime.stage = 'inspecting';
-    logEvent('uninstall.selection_verified', { id: task.id, appCount: task.apps.length });
-    writeGuided(runtime, 'y\n');
-    return;
+    logGuided(task, runtime, 'selection_verified', { appCount: task.apps.length, prompt: selectionPrompt ? 'selection' : 'review' });
+    if (selectionPrompt) {
+      writeGuided(runtime, 'y\n');
+      return;
+    }
   }
-  if (runtime.stage === 'inspecting' && text.endsWith('Enter confirm, ESC cancel:')) {
+  if (runtime.stage === 'inspecting' && reviewPrompt) {
     let files;
     try {
       files = parseUninstallPlan(text, task.apps);
     } catch (error) {
-      rejectGuided(task, runtime, error.message);
+      rejectGuided(task, runtime, error.message, error);
       return;
     }
     runtime.promptAt = Date.now();
-    logEvent('uninstall.plan_ready', { id: task.id, fileCount: files.length });
+    logGuided(task, runtime, 'plan_ready', { fileCount: files.length, files: files.map(file => ({ path: cleanMessage(file.path), kind: file.kind, sizeLabel: file.sizeLabel })), response: cleanMessage(text) });
     if (task.mode === 'preview') {
       runtime.previewReady = true;
       runtime.stage = 'previewClosing';
@@ -895,7 +904,7 @@ function parseGuidedOutput(task, runtime) {
       promptToken: crypto.randomUUID(),
       message: text.includes('Sorry, try again') ? '密码未通过认证，请重试。也可以停止本次操作' : 'Mole 需要管理员认证，请输入当前 Mac 账户的密码'
     });
-    logEvent('uninstall.authentication_requested', { id: task.id });
+    logGuided(task, runtime, 'authentication_requested');
   }
 }
 
@@ -922,13 +931,15 @@ function startGuidedUninstall(task, apps) {
       stdio: ['pipe', 'pipe', 'pipe']
     });
   } catch (error) {
-    const runtime = { finished: false, cancelRequested: false, stderrTail: '', exitFile: '' };
+    const runtime = { target: environment.moPath, finished: false, cancelRequested: false, stderrTail: '', exitFile: '' };
     runtimes.set(task.id, runtime);
+    logGuided(task, runtime, 'process_failed', { args: args.map(cleanMessage), error: cleanMessage(error.stack || error.message) });
     finishGuided(task, runtime, 1, null, error.message);
     return;
   }
   const runtime = {
     child,
+    target: environment.moPath,
     exitFile,
     finished: false,
     cancelRequested: false,
@@ -945,6 +956,7 @@ function startGuidedUninstall(task, apps) {
     guided: true
   };
   runtimes.set(task.id, runtime);
+  logGuided(task, runtime, 'process_started', { pid: child.pid, args: args.map(cleanMessage), apps: apps.map(app => ({ name: cleanMessage(app.name), path: cleanMessage(app.path) })) });
   const append = chunk => {
     emitOutput(task.id, chunk);
     runtime.buffer += chunk;
@@ -981,6 +993,7 @@ function finishGuided(task, runtime, code, signal, failure) {
   if (runtime.finished) return;
   runtime.finished = true;
   if (runtime.watchdog) clearInterval(runtime.watchdog);
+  if (runtime.killTimer) clearTimeout(runtime.killTimer);
   let exitCode = typeof code === 'number' ? code : null;
   if (runtime.exitFile) {
     try {
@@ -1039,8 +1052,7 @@ function finishGuided(task, runtime, code, signal, failure) {
   task.error = flow.phase === 'failed' ? flow.message : '';
   runtimes.delete(task.id);
   if (activeTaskId === task.id) activeTaskId = '';
-  const elapsedMs = Math.max(0, new Date(task.endedAt).getTime() - new Date(task.startedAt).getTime());
-  logEvent('uninstall.finished', { id: task.id, phase: flow.phase, outcome: flow.outcome, code: exitCode, elapsedMs });
+  logGuided(task, runtime, 'finished', { phase: flow.phase, outcome: flow.outcome, code: exitCode, signal, error: cleanMessage(failure || runtime.unsupported), response: cleanMessage(text) });
   emitTask(task);
 }
 
@@ -1071,7 +1083,7 @@ function uninstallAction(id, action) {
   } else {
     throw new Error('不支持的卸载操作');
   }
-  logEvent('uninstall.action_submitted', { id, action: action.action });
+  logGuided(task, runtime, 'action_submitted', { action: action.action });
   return publicTask(task);
 }
 
@@ -1135,7 +1147,7 @@ function startTask(request) {
     endedAt: null,
     exitCode: null,
     error: '',
-    path: operation === 'analyze' ? resolveAnalyzePath(input.path) : undefined,
+    path: operation === 'analyze' ? resolveAnalyzePath(input.path) : maintenanceContext?.scanPath || undefined,
     ...(operation === 'uninstall' ? {
       apps: selectedApps.map(publicApp),
       uninstall: { phase: 'preparing', files: null, notices: [], message: '正在检查应用与关联文件' }
@@ -1146,7 +1158,7 @@ function startTask(request) {
   outputSubs.set(id, new Set());
   pruneFinishedTasks();
   activeTaskId = id;
-  logEvent('task.started', { id, operation, mode, pty, ...(operation === 'uninstall' ? { appCount: selectedApps.length } : {}) });
+  logEvent('task.started', { id, requestId: maintenanceContext?.requestId, operation, mode, pty, path: cleanMessage(task.path), ...(operation === 'uninstall' ? { appCount: selectedApps.length } : {}) });
   emitTask(task);
 
   if (operation === 'analyze') startAnalyze(task);
@@ -1304,10 +1316,15 @@ function openLog() {
 }
 
 function pickDirectory() {
+  const requestId = crypto.randomUUID();
+  const started = Date.now();
+  logEvent('directory_picker.requested', { requestId, target: 'utools.showOpenDialog', properties: ['openDirectory'] });
   try {
-    const result = utools.showOpenDialog({ title: '选择要分析的目录', properties: ['openDirectory', 'createDirectory'], buttonLabel: '选择' });
+    const result = utools.showOpenDialog({ title: '选择目录', properties: ['openDirectory'], buttonLabel: '选择' });
+    logEvent('directory_picker.completed', { requestId, target: 'utools.showOpenDialog', selectedPath: cleanMessage(result?.[0]), cancelled: !result?.length, elapsedMs: Date.now() - started });
     return result && result.length ? result[0] : null;
-  } catch {
+  } catch (error) {
+    logEvent('directory_picker.failed', { requestId, target: 'utools.showOpenDialog', elapsedMs: Date.now() - started, message: cleanMessage(error.message), stack: cleanMessage(error.stack) });
     return null;
   }
 }

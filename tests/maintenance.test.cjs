@@ -70,6 +70,41 @@ function harness(t, operation = 'installer') {
   return { root, environment, tasks, runtimes, logs, children, killed, controller, start, item, previewFiles };
 }
 
+test('maintenance runs a private helper copy outside plugin resources and removes it after exit', t => {
+  const h = harness(t);
+  const run = h.start();
+  const helper = run.child.args[3];
+  assert.equal(path.dirname(helper), run.runtime.directory);
+  assert.equal(fs.statSync(run.runtime.directory).mode & 0o777, 0o700);
+  assert.equal(fs.statSync(helper).mode & 0o777, 0o600);
+  assert.deepEqual(fs.readFileSync(helper), fs.readFileSync(path.join(__dirname, '..', 'maintenance-helper.sh')));
+  run.event('inventory', '0', 'complete');
+  run.close();
+  assert.equal(run.task.maintenance.phase, 'reviewed');
+  assert(!fs.existsSync(run.runtime.directory));
+});
+
+test('helper preparation failures stop before spawning and remove the task directory', t => {
+  const h = harness(t);
+  const context = h.controller.prepare({ operation: 'installer', mode: 'preview' });
+  const task = { id: 'helper-failure', operation: 'installer', mode: 'preview', state: 'running' };
+  h.tasks.set(task.id, task);
+  const writeFileSync = fs.writeFileSync;
+  t.mock.method(fs, 'writeFileSync', (target, ...args) => {
+    if (path.basename(target) === 'maintenance-helper.sh') throw Object.assign(new Error('helper write denied'), { code: 'EACCES' });
+    return writeFileSync(target, ...args);
+  });
+  h.controller.start(task, context);
+  assert.equal(h.children.length, 0);
+  assert.equal(h.runtimes.size, 0);
+  assert.equal(task.state, 'failed');
+  assert.match(task.error, /无法准备 Mole 图形交互组件/);
+  const failure = h.logs.find(entry => entry.event === 'maintenance.adapter_preparation_failed');
+  assert.equal(failure.id, task.id);
+  assert.match(failure.error, /helper write denied/);
+  assert(!fs.existsSync(path.dirname(failure.target)));
+});
+
 test('size parsing preserves unknown sizes and rejects unsafe numeric totals', () => {
   assert.equal(sizeBytes('1.5 GB'), 1.5 * 1024 ** 3);
   assert.equal(sizeBytes('32 B'), 32);

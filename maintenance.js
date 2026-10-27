@@ -129,7 +129,7 @@ function resolveMoleScript(environment, operation) {
 
 function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv, emitTask, finishTask, killGroup, logEvent, spawnProcess = spawn }) {
   const plans = new Map();
-  const helper = path.join(__dirname, 'maintenance-helper.sh');
+  const helperSource = path.join(__dirname, 'maintenance-helper.sh');
   const update = (task, patch) => { task.maintenance = { ...task.maintenance, ...patch }; emitTask(task); };
   const elapsed = runtime => Date.now() - runtime.started;
   const log = (task, runtime, event, fields = {}) => logEvent(`maintenance.${event}`, { id: task.id, requestId: runtime.context.requestId, operation: task.operation, mode: task.mode, scanPath: safeText(runtime.context.scanPath), step: runtime.stage, elapsedMs: elapsed(runtime), ...fields });
@@ -196,12 +196,28 @@ function createMaintenanceController({ tasks, runtimes, getEnvironment, childEnv
       '/usr/bin/script -q /dev/null /bin/bash "$1" "$2" "$3" "$4" "$5" "$6" "$7" <&3',
       'code=$?', 'printf \'%s\' "$code" > "$MOLE_EXIT_FILE"', 'kill 0'
     ].join('; ');
+    const helper = path.join(directory, 'maintenance-helper.sh');
+    try {
+      log(task, runtime, 'adapter_preparation_started', { source: helperSource, target: helper });
+      // Electron can read ASAR resources, but Bash needs a real filesystem path.
+      const source = fs.readFileSync(helperSource);
+      fs.writeFileSync(helper, source, { mode: 0o600, flag: 'wx' });
+      log(task, runtime, 'adapter_preparation_finished', { target: helper, bytes: source.length });
+    } catch (error) {
+      log(task, runtime, 'adapter_preparation_failed', { source: helperSource, target: helper, error: safeText(error.stack || error.message) });
+      complete(task, runtime, 1, null, '无法准备 Mole 图形交互组件，请检查插件文件或临时目录权限');
+      return;
+    }
     try {
       runtime.child = spawnProcess('/bin/bash', ['-c', wrapper, 'bash', helper, context.script, task.operation, task.mode, runtime.token, runtime.previewFile, context.scanPath], {
         cwd: path.dirname(directory), env: childEnv({ MOLE_EXIT_FILE: runtime.exitFile, MOLE_TEST_MODE: '0', MOLE_TEST_NO_AUTH: '0', MOLE_PURGE_YES: '0', MO_DEBUG: '0', BASH_ENV: '', ENV: '' }), detached: true, stdio: ['pipe', 'pipe', 'pipe']
       });
-    } catch (error) { complete(task, runtime, 1, null, error.message); return; }
-    log(task, runtime, 'process_started', { target: context.script, pid: runtime.child.pid, selectedCount: context.selected.length });
+    } catch (error) {
+      log(task, runtime, 'process_start_failed', { target: context.script, helper, error: safeText(error.stack || error.message) });
+      complete(task, runtime, 1, null, error.message);
+      return;
+    }
+    log(task, runtime, 'process_started', { target: context.script, helper, pid: runtime.child.pid, selectedCount: context.selected.length });
     const append = chunk => {
       if (runtime.finished) return;
       runtime.lastOutputAt = Date.now();
